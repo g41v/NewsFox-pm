@@ -134,7 +134,7 @@ function getProfURL(profURL)
 		getService(Components.interfaces.nsIProperties).
 		get("ProfD", Components.interfaces.nsIFile);
 	dFile.append("newsfox");
-	if (!dFile.exists()) dFile.create(dFile.DIRECTORY_TYPE, 0750);
+	if (!dFile.exists()) dFile.create(dFile.DIRECTORY_TYPE, 0o750);
 // doesn't work in FF2
 //	if (!dFile.exists()) dFile.create(dFile.DIRECTORY_TYPE, 0o0750);
 	var dURI = ioSvc.newURI(nsIPH.getURLSpecFromFile(dFile),null,null);
@@ -184,7 +184,7 @@ function NFgetProfileDir(force)
 		getService(Components.interfaces.nsIProperties).
 		get("ProfD", Components.interfaces.nsIFile);
 	file.append("newsfox");
-	if (!file.exists()) file.create(file.DIRECTORY_TYPE, 0750);
+	if (!file.exists()) file.create(file.DIRECTORY_TYPE, 0o750);
 	// doesn't work in FF2
 	//	if (!file.exists()) file.create(file.DIRECTORY_TYPE, 0o0750);
 	gNewsfoxDirURL = nsIPH.getURLSpecFromFile(file);

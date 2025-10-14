@@ -68,7 +68,7 @@ function exportOpml(doAll)
 	{
 		var file = picker.file;
 		if(file.exists()) file.remove(true);
-		file.create(file.NORMAL_FILE_TYPE, 0666);
+		file.create(file.NORMAL_FILE_TYPE, 0o666);
 		expOpml(file,true,doAll);
 	}
 }
@@ -173,7 +173,7 @@ function backupOpml()
 	var nowFilename = getBackupFilename(now);
 	var file = NFgetProfileDir();
 	file.append(BACKUPS);
-	if (!file.exists()) file.create(file.DIRECTORY_TYPE, 0750);
+	if (!file.exists()) file.create(file.DIRECTORY_TYPE, 0o750);
 	file.append(nowFilename);
 	if(file.exists())
 		return;
@@ -188,7 +188,7 @@ function backupOpml()
 			dirFiles[i++] = backupEnum.getNext().QueryInterface(Components.interfaces.nsILocalFile);
 		for (i=0; i<dirFiles.length-(NUMBACKUP-1); i++)
 			dirFiles[i].remove(false);
-		file.create(file.NORMAL_FILE_TYPE, 0666);
+		file.create(file.NORMAL_FILE_TYPE, 0o666);
 		expOpml(file,false,true);
 	}
 }
@@ -588,7 +588,7 @@ function exportRSS()
 	{
 		var file = picker.file;
 		if(file.exists()) file.remove(true);
-		file.create(file.NORMAL_FILE_TYPE, 0666);
+		file.create(file.NORMAL_FILE_TYPE, 0o666);
 
 		var ostream = openOutputStream(file);
 		var data = "";
