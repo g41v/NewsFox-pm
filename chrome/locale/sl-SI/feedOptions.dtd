@@ -1,0 +1,25 @@
+<!ENTITY useGlobal "Uporabi splošne nastavitve">
+<!ENTITY feedAutoCheck "'Osveži vse vire' preveri ta vir za nove članke">
+<!ENTITY dontDeleteUnread "Ne izbriši neprebrane">
+<!ENTITY groups "Skupine:">
+<!ENTITY checkfeed "Preveri vir">
+<!ENTITY iconsrc "Vir ikon:">
+<!ENTITY authentication "Overitev (samo varni viri)">
+<!ENTITY username "Uporabniško ime:">
+<!ENTITY password "Geslo:">
+<!ENTITY feedPrivate "Šifriraj članke vira na disku">
+<!ENTITY keepDays.pre "Ohrani članke vsaj">
+<!ENTITY keepDays.post "dni">
+<!ENTITY mainTab "Splošno">
+<!ENTITY filterTab "Spletni filter">
+<!ENTITY securityTab "Varnost">
+<!ENTITY filterNew "Prenesi filtrirano spletno stran za vse nove članke">
+<!ENTITY filterImages "Prenesi slike v filtriranih spletnih straneh">
+<!ENTITY filterInfo "Vnesite filter, da preoblikujete kodo HTML povezave članka v razširjen opis članka. Filter je lahko običajni izraz, ki se uporabi za merilo ali koda JavaScript, katere vrednost postane razširjen opis članka.">
+<!ENTITY filterJSinfo "Kadar uporabljate JavaScript, so na voljo te spremenljivke:">
+<!ENTITY filterJSvar1 "linkDOM vsebuje DOM strani povezave članka">
+<!ENTITY filterJSvar2 "linkHTML vsebuje besedilo/HTML strani povezave članka">
+<!ENTITY filterJSvar3 "getElementsByClass(razred, oznaka, vozlišče) vrne polje elementov HTML z dano oznako in razredom, ki ju vsebuje dano vozlišče">
+<!ENTITY filterMime "Preglasi nabor znakov (+ za samodejno, &gt; za preskusno, ali nabor znakov)">
+<!ENTITY filterInfo2 "Vnesti morate filter ali pa bodo slike prenesene za trenutni članek in ne za stran HTML. Za uporabo privzetega filtra pritisnite vračalko.">
+<!ENTITY never "Nikoli">

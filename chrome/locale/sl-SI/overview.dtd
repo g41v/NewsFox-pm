@@ -1,0 +1,29 @@
+<!ENTITY overview.title "Kratka vsebina">
+<!ENTITY adding.feeds "Dodajanje virov">
+<!ENTITY addnew.feeds "Dodajte nove vire z uporabo gumba za dodajanje virov.">
+<!ENTITY addnew.feeds.opml "Nove vire lahko uvozite iz datoteke OPML v meniju možnosti.">
+<!ENTITY addnew.feeds.auto "Z izbiro 'NewsFox' v plošči 'Viri' Firefoxovih možnosti (nastavitev) lahko NewsFox doda vire s klikom na ikono RSS na desni strani polja URL, ko je vir na voljo.">
+<!ENTITY alternative.use "NewsFox lahko tudi bere Firefoxove žive zaznamke. Lahko izberete, katere žive zaznamke želite brati z NewsFoxom z uporabo gumba Živi zaznamki.">
+<!ENTITY feed.options "Možnosti vira lahko spremenite iz vsebinskega menija v podoknu virov (na levi strani) ali iz obeh gumbov za možnosti.">
+<!ENTITY remove.feeds "Odstranjevanje virov">
+<!ENTITY feed.remove "Trajno odstranite vir in vse njegove članke z uporabo gumba za izbris virov. To bo odstranilo vir iz vseh skupin.">
+<!ENTITY new.items "Preverjanje za nove članke">
+<!ENTITY retrieve.items "Pridobite nove članke z uporabo gumba za osvežitev.">
+<!ENTITY retrieve.items.alt "Nove članke lahko pridobite tudi z uporabo vsebinskega menija na viru ali skupini v podoknu virov.">
+<!ENTITY retrieve.options "Možnosti za samodejni prenos novih člankov lahko nastavite v meniju možnosti.">
+<!ENTITY manage.title "Upravljanje s članki">
+<!ENTITY manage.info "Članki so označeni kot prebrani, ko so izbrani. Stanje članka za prebrano/neprebrano in označeno/neoznačeno z zastavico lahko preklopite s klikom na ustrezno ikono.">
+<!ENTITY manage.info2 "Članke lahko označite kot prebrane/neprebrane ali izbrisane z uporabo vsebinskega menija, gumbov orodne vrstice ali tipkovnih bližnjic.">
+<!ENTITY manage.info3 "Članke lahko preuredite s klikom na naziv stolpcev. Privzeto so novejši članki na vrhu. Za premikanje neprebranih člankov na vrh kliknite naziv stolpca prebrano/neprebrano.">
+<!ENTITY groups.tags "Skupine">
+<!ENTITY groups.info "Skupina 'VIRI' vsebuje vse vaše vire. Viri lahko pripadajo neomejenemu številu drugih skupin. Obstaja samo ena kopija vira: ko označite članek kot prebran, je tako označen v vseh skupinah.">
+<!ENTITY groups.info1 "Skupino lahko dodate z gumbom za dodajanje skupin.">
+<!ENTITY groups.info2 "Skupine se oblikujejo tudi z iskanjem po virih. Na primer, med svojimi viri lahko iščete za vse zadetke z 'NewsFox'. Te iskalne skupine lahko dodate z gumbom za dodajanje iskanja.">
+<!ENTITY groups.info3 "Obe vrsti skupin lahko izbrišete z gumbom za izbris skupin.">
+<!ENTITY groups.info4 "Skupine so uporabne za urejanje svojih virov: skupino lahko ustvarite za nove, pomembne, dnevne, tedenske vire, novice, tehniko. Uredite si jih lahko, kakor hočete.">
+<!ENTITY groups.info5 "Možnosti skupine lahko spremenite iz vsebinskega menija v podoknu virov ali iz spodnjih možnosti.">
+<!ENTITY other.title "Razno">
+<!ENTITY other.dragndrop "Vire lahko preuredite v skupini in skupine lahko preuredite z uporabo 'povleci in spusti'.">
+<!ENTITY other.art.toolbar "Za podokno virov na levi strani obstaja vsebinski meni. Za članke ne desni strani obstaja vsebinski meni in orodna vrstica. Orodni namigi razlagajo pomen gumbov.">
+<!ENTITY other.info "V malo verjetnem primeru, da vsi vaši viri izginejo, lahko uporabite možnosti za obnovitev v glavnem meniju možnosti.">
+<!ENTITY other.info2 "Tipkovne bližnjice lahko nastavite v meniju možnosti in seznam bližnjic je na voljo v meniju za pomoč.">

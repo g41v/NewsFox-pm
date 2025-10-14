@@ -1,0 +1,31 @@
+<!ENTITY checkFeed "Preveri vir">
+<!ENTITY troubleshoot "Reševanje težav">
+<!ENTITY OPML.import "Uvozi OPML">
+<!ENTITY OPML.export "Izvozi OPML">
+<!ENTITY toolOptions.import.addfeeds "Dodaj k obstoječim virom">
+<!ENTITY toolOptions.import.startfresh "Začni na novo">
+<!ENTITY toolOptions.import.file "Iz datoteke">
+<!ENTITY toolOptions.import.URL "Iz URL-ja">
+<!ENTITY toolOptions.passwd "Spremeni geslo">
+<!ENTITY help "Pomoč za NewsFox">
+<!ENTITY feeds "Viri">
+<!ENTITY r "P">
+<!ENTITY markAllAsUnread "Označi kot prebrano">
+<!ENTITY tagSel "Označi izbrano">
+<!ENTITY sortFeeds "Razvrsti vire">
+<!ENTITY unsortFeeds "Razveljavi razvrščanje">
+<!ENTITY toolOptions.restoreBackup "Obnovi varnostno kopijo">
+<!ENTITY exportRSS "Izvozi v RSS">
+<!ENTITY wait "Zaradi varnosti počakajte, da se nalaganje konča">
+<!ENTITY tagEdit "Označi izbrano">
+<!ENTITY addGroup.regular "Običajno">
+<!ENTITY addGroup.search "Išči">
+<!ENTITY addGroup.tag "Označi">
+<!ENTITY addFeed.regular "RSS/Atom">
+<!ENTITY addFeed.storage "Shramba">
+<!ENTITY prob "Ver.">
+<!ENTITY mainToolbar "Glavna orodna vrstica">
+<!ENTITY feedToolbar "Orodna vrstica virov">
+<!ENTITY Xtend "+">
+<!ENTITY markSelAsRead "Označi izbrano kot prebrano">
+<!ENTITY markSelAsUnread "Označi izbrano kot neprebrano">

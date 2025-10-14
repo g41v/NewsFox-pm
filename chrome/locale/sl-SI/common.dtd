@@ -1,0 +1,63 @@
+<!ENTITY NewsFoxTeam "Ekipa NewsFox">
+<!ENTITY feedOptions "Možnosti vira">
+<!ENTITY text "Besedilo">
+<!ENTITY webpage "Spletna stran">
+<!ENTITY groupOptions "Možnosti skupine">
+<!ENTITY sCcancel "Prekliči osveževanje">
+<!ENTITY sCadd "Dodaj vir">
+<!ENTITY sCoptions "Možnosti">
+<!ENTITY sChomePage "Domača stran">
+<!ENTITY sCmanageLivemarks "Upravljaj z živimi zaznamki">
+<!ENTITY sCmarkAllAsRead "Označi vse kot prebrano">
+<!ENTITY sCdelete "Izbriši vir">
+<!ENTITY sCnextUnread "Naslednji neprebrani">
+<!ENTITY sCopenUnread "Odpri neprebrane">
+<!ENTITY sCopenSel "Odpri izbrane">
+<!ENTITY sCdeleteSel "Izbriši izbrane">
+<!ENTITY sCaddSearch "Dodaj skupino za iskanje">
+<!ENTITY sCaddGroup "Dodaj skupino">
+<!ENTITY sCdeleteGroup "Izbriši skupino">
+<!ENTITY sCshortcut "Tipkovne bližnjice">
+<!ENTITY sCrefresh "Osveži vire">
+<!ENTITY sCpreviousUnread "Prejšnji neprebrani">
+<!ENTITY sCdeleteFeedFromGroup "Izbriši vir iz skupine">
+<!ENTITY sCkeystrokeHeading "Tipka">
+<!ENTITY sCselAll "Izberi vse članke">
+<!ENTITY flagCol "Zastavica">
+<!ENTITY titleCol "Naziv">
+<!ENTITY readCol "Prebrano">
+<!ENTITY dateCol "Datum">
+<!ENTITY authorCol "Avtor">
+<!ENTITY sourceCol "Izvor">
+<!ENTITY feedCol "Vir">
+<!ENTITY tagCol "Oznaka">
+<!ENTITY probCol "Zanimanje">
+<!ENTITY threadCol "Nit">
+<!ENTITY XtendCol "Filtriran splet">
+<!ENTITY sCprint "Natisni članek">
+<!ENTITY sCtoggleFilter "Preklopi spletni filter">
+<!ENTITY sortTab "Razvrščanje">
+<!ENTITY sortArticles "Razvrsti članke:">
+<!ENTITY firstSort "Prvo razvrščanje:">
+<!ENTITY secondSort "Drugo razvrščanje:">
+<!ENTITY thirdSort "Tretje razvrščanje:">
+<!ENTITY fourthSort "Četrto razvrščanje:">
+<!ENTITY noCol "Brez">
+<!ENTITY ascendingDir "Naraščajoče">
+<!ENTITY descendingDir "Padajoče">
+<!ENTITY updatedUnread "Označi posodobljene članke kot prebrane">
+<!ENTITY yes "Da">
+<!ENTITY no "Ne">
+<!ENTITY days "dni">
+<!ENTITY articles "Članki">
+<!ENTITY displayStyle "Slog prikaza:">
+<!ENTITY deleteOld "Izbriši stare članke">
+<!ENTITY autoRefresh "Samodejno osveži vsakih:">
+<!ENTITY minutes "minut">
+<!ENTITY deleteOldKeepUnread "Da, ohrani neprebrane">
+<!ENTITY deleteOldDeleteUnread "Da, izbriši neprebrane">
+<!ENTITY oldMeans "Nastavi kot stare,">
+<!ENTITY after "ko preteče">
+<!ENTITY notInFeed "če niso v viru">
+<!ENTITY feeds "Viri">
+<!ENTITY removedHTMLtags "Odstranjene oznake HTML">

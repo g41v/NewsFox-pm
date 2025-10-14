@@ -1,0 +1,9 @@
+<!ENTITY title "Uredi oznake">
+<!ENTITY tagAdd "Oznake za dodajanje k izbranim člankom">
+<!ENTITY tagRemove "Oznake za odstranjevanje iz izbranih člankov">
+<!ENTITY tagDeleteCompletely "Oznake za izbris iz vseh člankov in seznama oznak">
+<!ENTITY colorVaries1 "MODRO: oznaka je v vseh izbranih člankih">
+<!ENTITY colorVaries2 "Mešano: oznaka je v nekaterih izbranih člankih">
+<!ENTITY colorVaries3 "RDEČE: oznaka ni v nobenem izbranem članku">
+<!ENTITY newTagAdd "Nove oznake za dodajanje v izbrane članke">
+<!ENTITY newTagAddExample "'/' loči oznake: 'tehnika/novice'">

@@ -1,0 +1,52 @@
+<!ENTITY title "Možnosti NewsFox">
+<!ENTITY global "Splošen slog prikaza:">
+<!ENTITY checkOnStartup "Osveži vse vire ob zagonu">
+<!ENTITY notifyUponNewArticles "Obvesti, ko so objavljeni novi članki">
+<!ENTITY confirmDelete "Vprašaj z potrditev ob brisanju skupin ali virov">
+<!ENTITY confirmDeleteArticle "Vprašaj za potrditev ob brisanju virov">
+<!ENTITY shortcutkeys "Tipkovne bližnjice:">
+<!ENTITY restart "(Spremembe lahko zahtevajo ponovni zagon NewsFoxa)">
+<!ENTITY shortcutsNone "brez">
+<!ENTITY shortcutsStd "običajno">
+<!ENTITY shortcutsAlt "nadomestno">
+<!ENTITY shortcutsCustom "po meri">
+<!ENTITY seehelp "(Pomoč) vsebuje seznam tipkovnih bližnjic.">
+<!ENTITY newsfox.dir "Mapa NewsFox">
+<!ENTITY moveNfDir "Vsebina mape:">
+<!ENTITY copy "kopiraj">
+<!ENTITY move "premakni">
+<!ENTITY noaction "brez dejanja">
+<!ENTITY Child_directory "Podrejena mapa">
+<!ENTITY Parent_directory "Nadrejena mapa">
+<!ENTITY dateStyle "Slog datuma:">
+<!ENTITY changeToPresent "Spremeni datum članka na današnji, če:">
+<!ENTITY articleTooltips "Orodni namigi člankov">
+<!ENTITY copyToClipboard "Kopiraj telo članka na odložišče">
+<!ENTITY selectAddedFeed "Izberi novi vir ob dodajanju">
+<!ENTITY feedRefresh "Osveževanje virov:">
+<!ENTITY feedRefreshThreads "niti">
+<!ENTITY feedRefreshRenew "obnovitev (sekunde)">
+<!ENTITY feedSlowdown "Za počasnejše računalnike zmanjšajte niti in/ali povečajte čas obnovitve.">
+<!ENTITY feedRefreshTimeout "Časovna omejitev osveževanja virov (sekunde)">
+<!ENTITY horizontalPanes "Vodoravna podokna (zahteva ponovni zagon)">
+<!ENTITY favicons "Zaznamke">
+<!ENTITY updateTimeToBookmark "Zapiši URL vira in čase posodobitev v zaznamek">
+<!ENTITY spam "Omogoči filter zanimanj">
+<!ENTITY globalTab "Splošno">
+<!ENTITY feedTab "Viri/Članki">
+<!ENTITY generalTab "Splošno">
+<!ENTITY shortcutsTab "Bližnjice">
+<!ENTITY keywordsTab "Ključne besede">
+<!ENTITY shortcuts.operationHeader "Opravilo">
+<!ENTITY shortcuts.select "Za nastavitev bližnjice izberite vrstico in vtipkajte kombinacijo tipk.">
+<!ENTITY shortcuts.warning "Veliko bližnjic je še v uporabi in niso na voljo.">
+<!ENTITY shortcuts.experiment "Poskusite najti, kaj deluje ali izberite eno od prednastavljenih možnosti.">
+<!ENTITY keyword "Ključna beseda:">
+<!ENTITY keywordsHighlighted "Ključne besede so samodejno označene v člankih.">
+<!ENTITY caseIgnored "Vsa iskanja se opravijo z malimi črkami.">
+<!ENTITY statusBar "Ikona za samodejno naročanje v vrstici stanja">
+<!ENTITY statusBarText "Besedilo:">
+<!ENTITY buttonText "Besedilo gumba NewsFox:">
+<!ENTITY statusBarTextNew "Št. novih">
+<!ENTITY statusBarTextUnread "Št. neprebranih">
+<!ENTITY statusBarTextNone "Brez">

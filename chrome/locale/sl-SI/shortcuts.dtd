@@ -1,0 +1,24 @@
+<!ENTITY sCcustomShortcut "Tipkovne bližnjice po meri lahko določite z urejanjem atributov 'modifiers' in 'key' v datoteki 'accel.xml' v mapi newsfox v mapi profila, ko jih nekaj izberete v pogovornem oknu možnosti in končate s NewsFoxom.">
+<!ENTITY sCcustomHeading "Bližnjice po meri">
+<!ENTITY sCfixedHeading "Nespremenljive bližnjice">
+<!ENTITY sCartFeedHeading "Podokno člankov/virov">
+<!ENTITY sCviewArtHeading "Pogled/Podokno člankov">
+<!ENTITY sCfeedHeading "Podokno virov">
+<!ENTITY sCarticleUp "Članek gor">
+<!ENTITY sCarticleDown "Članek dol">
+<!ENTITY sCupLevel "Gor eno raven">
+<!ENTITY sCexpandTree "Razširi vir">
+<!ENTITY sCsame "isto">
+<!ENTITY sCtoggleArtFlag "Preklopi oznako z zastavico članka">
+<!ENTITY sCselToFocus "Izbira za žarišče">
+<!ENTITY sCfocusUp "Žarišče vira gor">
+<!ENTITY sCfocusDown "Žarišče vira dol">
+<!ENTITY sCmoveFeedUp "Premakni vir gor">
+<!ENTITY sCmoveFeedDown "Premakni vir dol">
+<!ENTITY sCfeedUp "Vir gor">
+<!ENTITY sCfeedDown "Vir dol">
+<!ENTITY sCexpColl "Razširi/Strni vir">
+<!ENTITY sCdeleteKey "Izbriši">
+<!ENTITY sCctrlKey "ctrl">
+<!ENTITY sCshiftKey "shift">
+<!ENTITY sCaltKey "alt">

@@ -1,0 +1,27 @@
+<!ENTITY name "Ime:">
+<!ENTITY insertbefore "Vstavi pred:">
+<!ENTITY dragrtl "Povlecite od desne proti levi, da v skupino dodate vire.">
+<!ENTITY dragltr "Povlecite od leve proti desni, da odstranite vire iz skupine.">
+<!ENTITY dragwithin "Povlecite v skupini, za preuredite.">
+<!ENTITY flagged "Označeno z zastavico:">
+<!ENTITY either "Oboje">
+<!ENTITY unread "Neprebrano:">
+<!ENTITY searchtext "Besedilo za iskanje:">
+<!ENTITY match "Ujemaj s/z:">
+<!ENTITY body "Telo">
+<!ENTITY title2 "Naziv">
+<!ENTITY tag "Oznaka">
+<!ENTITY casesensitive "Občutljivo na velikost črk">
+<!ENTITY searchvalues "Iskalne vrednosti">
+<!ENTITY textvalues "Besedilne vrednosti">
+<!ENTITY time "Čas:">
+<!ENTITY grouptosearch "Skupina za iskanje:">
+<!ENTITY between "Od">
+<!ENTITY and "do">
+<!ENTITY ago "nazaj">
+<!ENTITY hours "ur">
+<!ENTITY weeks "tednov">
+<!ENTITY months "mesecev">
+<!ENTITY years "let">
+<!ENTITY ever "neskončno">
+<!ENTITY showUnread "Prikaži število neprebranih člankov (lahko upočasni NewsFox)">

@@ -1,0 +1,9 @@
+<!ENTITY projectOwner "lastnik projekta">
+<!ENTITY localization "Lokalizacija:">
+<!ENTITY primaryContact "glavni stik">
+<!ENTITY developer "razvijalec">
+<!ENTITY projectCreator "ustvarjalec projekta">
+<!ENTITY icons "Ikone:">
+<!ENTITY fromFirefox "Večina ikon iz (ali spremenjeno iz) Firefoxa/Thunderbirda">
+<!ENTITY fromFamfamfam "Ikone zastav, oznak, shrambe in ograd iz famfamfam.com">
+<!ENTITY helpADR "Hvala ADR-ju za pomoč pri ikonah.">
