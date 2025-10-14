@@ -1,0 +1,9 @@
+<!ENTITY title "编辑标签">
+<!ENTITY tagAdd "要添加到选中文章的标签">
+<!ENTITY tagRemove "要从选中文章删除的标签">
+<!ENTITY tagDeleteCompletely "要从所有文章和标签列表删除的标签">
+<!ENTITY colorVaries1 "蓝色：标签在所有选中的文章中">
+<!ENTITY colorVaries2 "紫色：标签在部分选中的文章中">
+<!ENTITY colorVaries3 "红色：标签在未选中的文章中">
+<!ENTITY newTagAdd "要添加到选中文章的新标签">
+<!ENTITY newTagAddExample "用“/”分隔多个标签，例如：“科技/新闻”">

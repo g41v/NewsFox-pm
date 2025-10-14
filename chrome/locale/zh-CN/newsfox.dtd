@@ -1,0 +1,31 @@
+<!ENTITY checkFeed "检查源">
+<!ENTITY troubleshoot "疑难解答">
+<!ENTITY OPML.import "导入 OPML...">
+<!ENTITY OPML.export "导出 OPML...">
+<!ENTITY toolOptions.import.addfeeds "添加到现有的源">
+<!ENTITY toolOptions.import.startfresh "覆盖现有的源">
+<!ENTITY toolOptions.import.file "从文件">
+<!ENTITY toolOptions.import.URL "从 URL">
+<!ENTITY toolOptions.passwd "更改密码">
+<!ENTITY help "NewsFox 帮助">
+<!ENTITY feeds "源">
+<!ENTITY r "R">
+<!ENTITY markAllAsUnread "全部标记为未读">
+<!ENTITY tagSel "设置选中项的标签">
+<!ENTITY sortFeeds "源排序">
+<!ENTITY unsortFeeds "撤消排序">
+<!ENTITY toolOptions.restoreBackup "还原备份文件">
+<!ENTITY exportRSS "导出到 RSS...">
+<!ENTITY wait "出于安全考虑，请等待直至载入完成">
+<!ENTITY tagEdit "编辑选中项的标签">
+<!ENTITY addGroup.regular "常规">
+<!ENTITY addGroup.search "搜索">
+<!ENTITY addGroup.tag "标签">
+<!ENTITY addFeed.regular "RSS/Atom">
+<!ENTITY addFeed.storage "存储">
+<!ENTITY prob "问题">
+<!ENTITY mainToolbar "主工具栏">
+<!ENTITY feedToolbar "源工具栏">
+<!ENTITY Xtend "+">
+<!ENTITY markSelAsRead "标记选中项为已读">
+<!ENTITY markSelAsUnread "标记选中项为未读">
