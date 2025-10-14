@@ -254,11 +254,22 @@ function getBaseURI(xml,base,type)
 	return baseuri;
 }
 
-function adjustBase(baseuri,url)
+function adjustBase(baseuri, url)
 {
-	var ioSvc = Components.classes['@mozilla.org/network/io-service;1'].getService(Components.interfaces.nsIIOService);
-	try{ return ioSvc.newURI(url,null,baseuri); }
-	catch(e){ return null; }
+	var ioSvc = Components.classes['@mozilla.org/network/io-service;1']
+				.getService(Components.interfaces.nsIIOService);
+	try {
+		// Handle protocol-relative URLs
+		if(url.startsWith('//')) {
+			url = baseuri.scheme + ':' + url;
+		}
+		return ioSvc.newURI(url, null, baseuri);
+	}
+	catch(e) {
+		// Log error
+		Components.utils.reportError("Failed to adjust base URI: " + e);
+		return null;
+	}
 }
 
 function getAtomSelfLink(xml,baseuri)
@@ -447,42 +458,90 @@ function makeTarget_Blank(hText)
 	return hText;
 }
 
-function fixRelativeLinks(hText,baseuri)
-{
-	var index, hTextLower, indGt, re, oldAttrL, indAttr, oldAttr;
-	for (var i=0; i<TAG_NAME.length; i++)
-	{
-		index = hText.length;
-		while (index > -1)
-		{
-			hTextLower = hText.toLowerCase();
-			index = hTextLower.lastIndexOf("<"+TAG_NAME[i]+" ",index);
-			indGt = hText.indexOf(">",index);
-			try
-			{
-				switch (i)
-				{
-					case 0:
-					case 2:
-						re = /href\s*=\s*(['"])(.*?)\1/;
-						break;
-					case 1:
-						re = /src\s*=\s*(['"])(.*?)\1/;
-						break;
+function fixRelativeLinks(hText, baseuri) {
+	// Early return if no text or no baseuri
+	if (!hText || !baseuri) return hText;
+
+	// Define attribute patterns once
+	const patterns = {
+		a: /href\s*=\s*(['"])(.*?)\1/i,
+		img: {
+			src: /src\s*=\s*(['"])(.*?)\1/i,
+			srcset: /srcset\s*=\s*(['"])(.*?)\1/i,
+			dataSrc: /data-src\s*=\s*(['"])(.*?)\1/i
+		},
+		area: /href\s*=\s*(['"])(.*?)\1/i
+	};
+
+	// Process each tag type
+	for (const tag of TAG_NAME) {
+		let position = hText.length;
+		const tagPattern = new RegExp(`<${tag}\\s`, 'gi');
+		
+		while (position > -1) {
+			// Find the last occurrence of the tag before position
+			const tagMatch = hText.substring(0, position).lastIndexOf(`<${tag} `);
+			if (tagMatch === -1) break;
+			
+			position = tagMatch;
+			
+			// Find the closing bracket
+			const closeTag = hText.indexOf('>', position);
+			if (closeTag === -1) break;
+
+			// Get the tag content
+			const tagContent = hText.substring(position, closeTag);
+			
+			if (tag === 'img') {
+				// Handle multiple attributes for img tags
+				for (const [attrName, pattern] of Object.entries(patterns.img)) {
+					const match = pattern.exec(tagContent);
+			if (match) {
+				const [fullMatch, quote, url] = match;
+						
+						if (attrName === 'srcset') {
+							// Handle srcset format: "url1 1x, url2 2x"
+							const sources = url.split(',').map(src => {
+								const [sourceUrl, descriptor] = src.trim().split(/\s+/);
+								const resolvedUrl = baseuri.resolve(sourceUrl);
+								return resolvedUrl ? `${resolvedUrl} ${descriptor || ''}` : src.trim();
+							});
+				
+							const newAttr = `${match[0].split(url)[0]}${sources.join(', ')}${quote}`;
+							const startPos = position + tagContent.indexOf(match[0]);
+							hText = hText.substring(0, startPos) + newAttr + 
+								   hText.substring(startPos + fullMatch.length);
+						} else {
+							// Handle src and data-src normally
+							const resolvedUrl = baseuri.resolve(url);
+							if (resolvedUrl) {
+								const startPos = position + tagContent.indexOf(match[0]);
+								const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
+								hText = hText.substring(0, startPos) + newAttr + 
+									   hText.substring(startPos + fullMatch.length);
+			}
+		}
+	}
+}
+			} else {
+				// Handle href for a and area tags
+				const pattern = patterns[tag];
+				const match = pattern.exec(tagContent);
+
+				if (match) {
+					const [fullMatch, quote, url] = match;
+					const resolvedUrl = baseuri.resolve(url);
+					
+					if (resolvedUrl) {
+						const startPos = position + tagContent.indexOf(match[0]);
+						const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
+						hText = hText.substring(0, startPos) + newAttr + 
+							   hText.substring(startPos + fullMatch.length);
+					}
 				}
-// don't know why the following doesn't work
-//				re = new RegExp(ATTR_NAME[i]+"\\s*=\\s*(['\"])(.*?)\1","");
-				oldAttrL = hTextLower.substring(index).match(re)[2];
-				indAttr = hTextLower.indexOf(oldAttrL,index);
-				oldAttr = hText.substring(indAttr,indAttr+oldAttrL.length);
 			}
-			catch(e) { indAttr = null; }
-			if (indAttr && indAttr < indGt)
-			{
-				var newAttr = baseuri.resolve(oldAttr);
-				hText = hText.substring(0,indAttr-1) + "\"" + newAttr + "\"" + hText.substring(indAttr+oldAttrL.length+1);
-			}
-			index--;
+			
+			position--;
 		}
 	}
 	return hText;
