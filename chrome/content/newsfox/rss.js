@@ -799,7 +799,7 @@ function getFavIcon(favicon,file)
 	try
 	{
 		var IOService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
-		var IOchannel = IOService.newChannel(favicon,null,null);
+		var IOchannel = IOService.newChannel(favicon,null,null, null, Services.scriptSecurityManager.getSystemPrincipal(), null, Ci.nsILoadInfo.SEC_NORMAL, Ci.nsIContentPolicy.TYPE_IMAGE);
 		var nfListener = Components.classes["@mozilla.org/network/downloader;1"].createInstance(Components.interfaces.nsIDownloader);
 		nfListener.init(nfObserver,file);
 		IOchannel.asyncOpen(nfListener,null);
