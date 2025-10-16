@@ -1217,28 +1217,23 @@ function setInputStream(data)
 	return istream;
 }
 
-function writeDataToFile(data, file, synchro, errorMessage)
-{
-	try
-	{
-		var istream, ostream;
+function writeDataToFile(data, file, synchro, errorMessage) {
+	try {
 		var ostream = openOutputStream(file);
-		if (hasNetUtil && !synchro)
-		{
-			istream = setInputStream(data);
-			NetUtil.asyncCopy(istream, ostream, function(err) {
-				if (!Components.isSuccessCode(err)) {
-					alert(errorMessage + err);
+		if (hasNetUtil && !synchro) {
+			var istream = setInputStream(data);
+			NetUtil.asyncCopy(istream, ostream, function(status) {
+				if (!Components.isSuccessCode(status)) {
+					console.error(errorMessage + status);
 				}
-			})
-		}
-		else
-		{
+			});
+		} else {
 			ostream.write(data, data.length);
 			ostream.close();
 		}
+	} catch(err) {
+		console.error(errorMessage + err);
 	}
-	catch (err) { alert(errorMessage + err); }
 }
 
 function moveToBackup(leafName)
