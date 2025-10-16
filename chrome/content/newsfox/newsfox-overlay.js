@@ -195,7 +195,9 @@ var NFuninstallObserver =
 		var observerService = 
 				Components.classes["@mozilla.org/observer-service;1"].
 				getService(Components.interfaces.nsIObserverService);
-		observerService.removeObserver(this,"quit-application-requested");
+		// When used as an event listener callback, this can lose its context and not refer to the NFuninstallObserver object as intended.
+		// By explicitly using NFuninstallObserver, we ensure the correct object is always used regardless of how the function is called.
+		observerService.removeObserver(NFuninstallObserver, "quit-application-requested");
 	},
 
 	cleanup : function()

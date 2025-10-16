@@ -804,7 +804,10 @@ function getFavIcon(favicon,file)
 		nfListener.init(nfObserver,file);
 		IOchannel.asyncOpen(nfListener,null);
 	}
-	catch(e) {}
+	catch(e)
+	{
+		console.error("Error downloading favicon:", { e, favicon });
+	}
 }
 
 function isImg(file)

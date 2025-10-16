@@ -200,22 +200,34 @@ function Parser2(xml,baseUrl)
 // ITEM:SOURCE
 			var source = items[i].getElementsByTagNameNS(NS[type],"source");
 			if (source.length > 0)
+			{
 				if (type < 2)  // RSS
 				{
 					item.source.name = getText(source[0]);
 					if (source[0].hasAttribute("url"))
+					{
 						item.source.url = source[0].getAttribute("url");
+					}
+					else
+					{
+						console.error("Source does not have a URL attribute.");
+					}
 				}
 				else
 				{
 					var titleArray = source[0].getElementsByTagNameNS(NS[type],"title");
-					if (titleArray.length > 0) 
+					if (titleArray.length > 0)
+					{
 							item.source.name = getXhtml(titleArray[0],type);
+					}
 					else
+					{
 						item.source.name = "...";
+					}
 					var uri = getLink(source[0],itembase,type);
 					if (uri) item.source.url = uri.spec;
 				}
+			}
 
 // ITEM:AUTHOR
 			item.author = getAuthor(items[i],type,false);
@@ -260,33 +272,43 @@ function adjustBase(baseuri, url)
 				.getService(Components.interfaces.nsIIOService);
 	try {
 		// Handle protocol-relative URLs
-		if(url.startsWith('//')) {
+		if(url.startsWith('//'))
+		{
 			url = baseuri.scheme + ':' + url;
 		}
+		// Create and return the new URI
 		return ioSvc.newURI(url, null, baseuri);
 	}
 	catch(e) {
 		// Log error
-		Components.utils.reportError("Failed to adjust base URI: " + e);
+		if (e instanceof Components.Exception)
+		{
+			console.error("Components.Exception: " + e.message);
+		}
+		else
+		{
+		console.error("Failed to adjust base URI: " + e);
+		}
 		return null;
 	}
 }
 
 function getAtomSelfLink(xml,baseuri)
 {
-	var newuri = null;
 	var url = null;
 	var links = xml.getElementsByTagNameNS(NS[3],"link");
 	if (links.length == 0) return baseuri;
 	for (var i=0; i<links.length; i++)
+	{
 		if (links[i].parentNode == xml && links[i].hasAttribute("rel") && links[i].getAttribute("rel") == "self")
 		{
 			url = links[i].getAttribute("href");
 			break;
 		}
+	}
 	if (url && url.indexOf("feeds.feedburner.com") > -1) return baseuri;
-	if (url) return adjustBase(baseuri,url)
-	else return baseuri;
+	if (url) return adjustBase(baseuri,url);
+	return baseuri;
 }
 
 function getLink(xml,baseuri,type)
@@ -298,22 +320,26 @@ function getLink(xml,baseuri,type)
 	if (type < 2)  // RSS
 	{
 		for (var i=0; i<links.length; i++)
+		{
 			if (links[i].parentNode == xml)
 			{
 				url = getText(links[i]);
 				break;
 			}
+		}
 	}
 	else
 	{
 		for (var i=0; i<links.length; i++)
+		{
 			if (links[i].parentNode == xml && (!links[i].hasAttribute("rel") || links[i].getAttribute("rel") == "alternate" || links[i].getAttribute("rel") == "http://www.iana.org/assignments/relation/alternate"))
 			{
 				url = links[i].getAttribute("href");
 				break;
 			}
+		}
 	}
-	newuri = adjustBase(baseuri,url);
+	var newuri = adjustBase(baseuri,url);
 	return newuri;
 }
 
@@ -393,7 +419,10 @@ function fixLinks(node, baseuri,type)
 	}
 	baseuri = getBaseURI(node,baseuri,type);
 	if (!baseuri || NFgetPref("z.dontFixRelativeLinks", "bool", false))
+	{
+		console.error("Failed to get a valid base URI.");
 		return node;
+	}
 	if (nType == "xhtml")
 	{
 		for (var i=0; i<TAG_NAME.length; i++)
@@ -555,9 +584,22 @@ function getXhtml(node,type)
 		var serializer = new XMLSerializer();
 		var xml = "";
 	// have to watch out for space before the atom <div>, can only be one <div>
+		try
+		{
 		for (var i=0; i<node.childNodes.length; i++)
+			{
 			if (node.childNodes[i].localName == "div")
+				{
 				xml = serializer.serializeToString(node.childNodes[i]);
+				}
+			}
+		}
+		// Return empty string on error
+		catch (e)
+		{
+		console.error("Error serializing XHTML: " + e);
+		return "";
+		}
 	// div can't be part of content, need to retain namespaces
 		xml = changeDivToSpan(xml);
 		return "<xhtml>" + stringTrim(xml) + "</xhtml>";
@@ -883,11 +925,18 @@ function fixYoutube1(node, baseuri, type)
 			index = hText.lastIndexOf("www.youtube.com\/embed", index);
 			if (index > -1)
 			{
+			try
+			{
 				var index1 = hText.lastIndexOf("iframe",index);
 				var index2 = hText.indexOf("iframe",index+21);
 				hText = hText.substring(0,index1) + "embed" + hText.substring(index1+6,index) + "www.youtube.com\/v" + hText.substring(index+21,index2) + "embed" + hText.substring(index2+6);
 //				hText = hText.substring(0,index) + "www.youtube.com\/v" + hText.substring(index+21);
 				node.textContent = hText;
+			}
+			catch (e)
+			{
+			console.error("Error processing YouTube embed: " + e);
+			}
 			}
 			index--;
 		}
