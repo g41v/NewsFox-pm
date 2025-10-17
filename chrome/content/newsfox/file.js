@@ -324,39 +324,45 @@ function doImgFile(i,req)
 	gPicVal[i] = retval;
 }
 
-function getXhtmlBody(body,tag,doc,artURI,style,tagsToRemove)
+function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 {
+	// Use the current document's principal for the DOMParser
+	const principal = doc.nodePrincipal; // Get the principal from the document
+	const parser = new DOMParser(); // Create a new DOMParser
+
 	// DOMParser is broken: Firefox bug#429785, using artURI is a fix
 	// added benefit: puts XML parse errors that are not suppressed
 	// in try-catch with the proper domain of the originating article
-	if (body.substring(0,7) == "<xhtml>")
+	if (body.substring(0, 7) == "<xhtml>")
 	{
-		var p = doc.createElementNS(XHTML,tag);
-		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g,"");
+		var p = doc.createElementNS(XHTML, tag);
+		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g, "");
 		body2 = emphsrch(body2);
-		if (tag == "p") body2 = linkify(body2,"x");
-		var xmlBody = new DOMParser(null,artURI,null).parseFromString(body2,"text/xml");
+		if (tag == "p") body2 = linkify(body2, "x");
+
+		// Create the XML document with the principal
+		var xmlBody = parser.parseFromString(body2, "text/xml");
 		// Atom specification guarantees a single <div> element, now a <span>
-		var xBody = doc.importNode(xmlBody.childNodes[0],true);
+		var xBody = doc.importNode(xmlBody.childNodes[0], true);
 		p.appendChild(xBody);
-		if (style == 5) stripMedia(p,tagsToRemove);
+		if (style == 5) stripMedia(p, tagsToRemove);
 	}
-	else if (style == 4)  // style == 4 is force XHTML
+	else if (style == 4) // style == 4 is force XHTML
 	{
-		var p = doc.createElementNS(XHTML,tag);
+		var p = doc.createElementNS(XHTML, tag);
 		var body2 = emphsrch(body);
 		// only linkify body, not title
 		if (tag == "p") body2 = linkify(body2, "x");
 		try
 		{
-			var xmlBody = new DOMParser(null,artURI,null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
-			var xBody = doc.importNode(xmlBody.childNodes[1],true);
+			var xmlBody = parser.parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>", "text/xml");
+			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
 		}
-		catch(e)
+		catch (e)
 		{
 			var p = doc.createElement(tag);
-			p.innerHTML =  body2;
+			p.innerHTML = body2;
 		}
 	}
 	else
@@ -365,8 +371,8 @@ function getXhtmlBody(body,tag,doc,artURI,style,tagsToRemove)
 		body = emphsrch(body);
 		// only linkify body, not title
 		if (tag == "p") body = linkify(body, "h");
-		p.innerHTML =  body;
-		if (style == 5) stripMedia(p,tagsToRemove);
+		p.innerHTML = body;
+		if (style == 5) stripMedia(p, tagsToRemove);
 	}
 	return p;
 }
@@ -1217,21 +1223,30 @@ function setInputStream(data)
 	return istream;
 }
 
-function writeDataToFile(data, file, synchro, errorMessage) {
-	try {
+function writeDataToFile(data, file, synchro, errorMessage)
+{
+	try
+	{
 		var ostream = openOutputStream(file);
-		if (hasNetUtil && !synchro) {
+		if (hasNetUtil && !synchro)
+		{
 			var istream = setInputStream(data);
-			NetUtil.asyncCopy(istream, ostream, function(status) {
-				if (!Components.isSuccessCode(status)) {
-					console.error(errorMessage + status);
+			NetUtil.asyncCopy(istream, ostream, function(err)
+			{
+				if (!Components.isSuccessCode(err))
+				{
+					console.error(errorMessage + err);
 				}
 			});
-		} else {
+		}
+		else
+		{
 			ostream.write(data, data.length);
 			ostream.close();
 		}
-	} catch(err) {
+	}
+	catch(err)
+	{
 		console.error(errorMessage + err);
 	}
 }
@@ -1270,38 +1285,53 @@ function rmBackupFile(backupFile)
 
 function fileRead(file)
 {
-	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance( Components.interfaces.nsIFileInputStream );
-	inputStream.init( file,-1,-1,null);
-	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"].createInstance( Components.interfaces.nsIScriptableInputStream );
+	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+		.createInstance(Components.interfaces.nsIFileInputStream);
+	inputStream.init(file, -1, -1, null);
+	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
+		.createInstance(Components.interfaces.nsIScriptableInputStream);
 	scInputStream.init(inputStream);
 	var output = scInputStream.read(-1);
 	scInputStream.close();
 	inputStream.close();
-	var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"].createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
+	
+	// Handle UTF-8 conversion
+	var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"]
+		.createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
 	converter.charset = "UTF-8";
 	return converter.ConvertToUnicode(output);
 }
 
 function xmlLoad(file, feed)
 {
-	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
-	inputStream.init(file,-1,-1,null);
-	var tmp = (new DOMParser()).parseFromStream(inputStream, "utf-8", inputStream.available(), "text/xml");
-	inputStream.close();
-// Firefox started sometimes writing garbage at the end of feed files beginning around FF30
-	var root = tmp.documentElement.localName.toLowerCase();
-	if (root == "parsererror" && feed != null)
+	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+		.createInstance(Components.interfaces.nsIFileInputStream);
+	try
 	{
-		var tmp1 = fileRead(file);
-		var tmp2 = tmp1.lastIndexOf("</newsfox-feed>");
-		if (tmp2 != -1)
+		inputStream.init(file, -1, -1, null);
+		var tmp = (new DOMParser()).parseFromStream(inputStream, "utf-8", inputStream.available(), "text/xml");
+		inputStream.close();
+		
+	// Firefox started sometimes writing garbage at the end of feed files beginning around FF30
+		var root = tmp.documentElement.localName.toLowerCase();
+		if (root == "parsererror" && feed != null)
+	{
+			var tmp1 = fileRead(file);
+			var tmp2 = tmp1.lastIndexOf("</newsfox-feed>");
+			if (tmp2 != -1)
 		{
-			var tmp3 = tmp1.substr(0,tmp2+15) + "\n";
-			tmp = (new DOMParser()).parseFromString(tmp3, "text/xml");
-			feed.readError = true;
+				var tmp3 = tmp1.substr(0,tmp2+15) + "\n";
+				tmp = (new DOMParser()).parseFromString(tmp3, "text/xml");
+				feed.readError = true;
+			}
 		}
+		return tmp;
 	}
-	return tmp;
+	catch(e)
+	{
+		if(inputStream) inputStream.close();
+		throw e;
+	}
 }
 
 ////////////////////////////////////////////////////////////////
@@ -1886,7 +1916,10 @@ function processXbody(art,xmlhttp,feed)
 			}
 		}
 		catch(e)
-			{ return doError(art, e); }
+			{
+			console.error("Error processing Xbody: " + e.message);
+			return doError(art, e);
+			}
 	}
 	else  // filterType == 2, XPath
 	{
@@ -1896,13 +1929,15 @@ function processXbody(art,xmlhttp,feed)
 		// xmlSer uses capitals in tags e.g. <DIV>, need to make sure
 		// artText is not XHTML or <DIV> tags will be ignored
 			artText = "<p>";
-			var result = linkDOM.evaluate(Xfilter, linkDOM, null,
+			var result = linkDOM.evaluate(Xfilter, linkDOM, null, 
 											XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
 			for (var j=0; j<result.snapshotLength; j++)
 				artText += xmlSer.serializeToString(result.snapshotItem(j));
 		}
 		catch(e)
-			{ return doError(art, e); }
+			{
+				return doError(art, e);
+			}
 	}
 
 	var base = xmlhttp.channel.URI.spec;
