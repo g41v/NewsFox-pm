@@ -799,43 +799,94 @@ function getFavIcon(favicon,file)
 	try
 	{
 		var IOService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+
+		// Create a new channel for the favicon URL
 		var IOchannel = IOService.newChannel(favicon,null,null, null, Services.scriptSecurityManager.getSystemPrincipal(), null, Ci.nsILoadInfo.SEC_NORMAL, Ci.nsIContentPolicy.TYPE_IMAGE);
+
+		// Create a downloader listener to handle the download
 		var nfListener = Components.classes["@mozilla.org/network/downloader;1"].createInstance(Components.interfaces.nsIDownloader);
+
+		// Initialize the listener with the observer and the target file
 		nfListener.init(nfObserver,file);
+
+		// Start the asynchronous download
 		IOchannel.asyncOpen(nfListener,null);
 	}
 	catch(e)
 	{
-		console.error("Error downloading favicon:", { e, favicon });
+	console.error("Error downloading favicon from " + favicon + " to " + file.path + ":", { e, favicon, file });
 	}
 }
 
 function isImg(file)
 {
-// TODO doesn't work with K-M
-//  if (!file.exists() || file.fileSize == 0) return false;
-	if (file.fileSize == 0) return false;
-	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance( Components.interfaces.nsIFileInputStream );
-	inputStream.init( file,-1,-1,null);
-	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"].createInstance( Components.interfaces.nsIScriptableInputStream );
+	// Check if the file size is zero
+	if (!file.exists() || file.fileSize == 0) return false;
+
+	// Create a file input stream to read the file
+	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
+	inputStream.init(file, -1, -1, null);
+
+	// Create a scriptable input stream to read the data
+	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"].createInstance(Components.interfaces.nsIScriptableInputStream);
 	scInputStream.init(inputStream);
+
+	// Read the entire content of the file
 	var output = scInputStream.read(-1);
 	scInputStream.close();
 	inputStream.close();
+
+	// Check if the content contains 'html'
 	if (output.toLowerCase().indexOf('html') == -1) return true;
 	return false;
 }
 
 var nfObserver =
 {
-	onDownloadComplete: function(adownloader, arequest, actxt , astatus, aresult)
+	onDownloadComplete: function(adownloader, arequest, actxt, astatus, aresult)
 	{
-		var aleafName = aresult.leafName;
-		var auid = aleafName.substr(0,aleafName.length-4);
-		var i=gFmodel.size();
-		if (i==0) return;
-		while(gFmodel.get(--i).uid != auid) if (i==0) return;
-		if (isImg(aresult)) gFmodel.get(i).icon.src = getFileSpec(aresult);
+		try 
+		{
+			var aleafName = aresult.leafName; // Get the name of the downloaded file
+			if (!aleafName) 
+			{
+				console.error("Downloaded file has no name.");
+				return;
+			}
+
+			var auid = aleafName;
+
+			// Check if the filename has an extension
+			var lastDotIndex = auid.lastIndexOf('.');
+			if (lastDotIndex !== -1) {
+					// Extract the UID by removing the extension
+					auid = auid.substring(0, lastDotIndex);
+			}
+
+			// Optionally, you can also trim any whitespace from the UID
+			auid = auid.trim();
+
+			var i = gFmodel.size(); // Get the size of the feed model
+			if (i === 0) return; // If there are no items, exit
+
+			// Loop through the feed model to find the matching UID
+			for (let index = i - 1; index >= 0; index--) 
+			{
+				if (gFmodel.get(index).uid === auid) 
+				{
+					// If the downloaded file is an image, update the feed model's icon
+					if (isImg(aresult)) 
+					{
+						gFmodel.get(index).icon.src = getFileSpec(aresult);
+					}
+					return; // Exit after updating
+				}
+			}
+		} 
+		catch (e) 
+		{
+			console.error("Error in onDownloadComplete:", e);
+		}
 	}
 }
 
