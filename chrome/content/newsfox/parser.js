@@ -487,14 +487,21 @@ function makeTarget_Blank(hText)
 	return hText;
 }
 
-function fixRelativeLinks(hText, baseuri) {
+function fixRelativeLinks(hText, baseuri)
+{
 	// Early return if no text or no baseuri
-	if (!hText || !baseuri) return hText;
+	if (!hText || !baseuri)
+	{
+	console.error("Invalid inputs for fixRelativeLinks:", { hText, baseuri });
+	return hText;
+	}
 
 	// Define attribute patterns once
-	const patterns = {
+	const patterns =
+	{
 		a: /href\s*=\s*(['"])(.*?)\1/i,
-		img: {
+		img:
+		{
 			src: /src\s*=\s*(['"])(.*?)\1/i,
 			srcset: /srcset\s*=\s*(['"])(.*?)\1/i,
 			dataSrc: /data-src\s*=\s*(['"])(.*?)\1/i
@@ -525,8 +532,8 @@ function fixRelativeLinks(hText, baseuri) {
 				// Handle multiple attributes for img tags
 				for (const [attrName, pattern] of Object.entries(patterns.img)) {
 					const match = pattern.exec(tagContent);
-			if (match) {
-				const [fullMatch, quote, url] = match;
+					if (match) {
+						const [fullMatch, quote, url] = match;
 						
 						if (attrName === 'srcset') {
 							// Handle srcset format: "url1 1x, url2 2x"
@@ -548,10 +555,10 @@ function fixRelativeLinks(hText, baseuri) {
 								const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
 								hText = hText.substring(0, startPos) + newAttr + 
 									   hText.substring(startPos + fullMatch.length);
-			}
-		}
-	}
-}
+							}
+						}
+					}
+				}
 			} else {
 				// Handle href for a and area tags
 				const pattern = patterns[tag];

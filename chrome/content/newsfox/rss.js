@@ -915,6 +915,8 @@ function repairIt(xmlhttp)
 			var index = docIndex+1;
 			var nxtLt = httpText.indexOf("<",index);
 			var nxtGt = httpText.indexOf(">",index);
+
+			// Process the DOCTYPE to handle nested elements
 			while (nestLevel > 0)
 			{
 				if (nxtLt < nxtGt)
@@ -938,28 +940,39 @@ function repairIt(xmlhttp)
 		}
 		else
 			var newText = httpText.substring(0,endHeader+2) + "\n<!DOCTYPE mathml [" + MATHML_ENTITY + "]>\n" + httpText.substring(endHeader+2);
+
+		// Parse the modified text
 		xml2 = domParser.parseFromString(newText, "application/xml");
 	}
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
+
+	// Check for parser errors
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
 	{
-		// remove most common non XML characters
-		httpText = httpText.replace(/[\n|\r|\t]/g," ");
-		httpText = httpText.replace(/[\x00-\x1F]/g,"");
+		// Remove most common non-XML characters
+		httpText = httpText.replace(/[\n|\r|\t]/g, " ").replace(/[\x00-\x1F]/g, "");
 		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
+
+	// Handle additional parser errors
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
 	{
-		// from Nils Maier, Sage bug#15473, just replace & with &amp;
+		// Replace & with &amp; for valid XML (from Nils Maier, Sage bug#15473)
 		httpText = httpText.replace(/&(?!amp;|quot;|lt;|gt;)/gm, '&amp;');
 		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
+
+	// Final check for parser errors
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
 	{
 		var tmp = httpText.indexOf("<?xml");
-		httpText = httpText.substring(tmp);
-		xml2 = domParser.parseFromString(httpText, "application/xml");
+		if (tmp !== -1) 
+		{
+			httpText = httpText.substring(tmp);
+			xml2 = domParser.parseFromString(httpText, "application/xml");
+		}
 	}
-	return xml2;
+
+	return xml2; // Return the parsed XML or null if parsing failed
 }
 
 // for feeds with xmlns="http://backend.userland.com/rss2"
