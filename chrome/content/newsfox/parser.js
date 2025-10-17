@@ -78,7 +78,8 @@ function Parser2(xml, baseUrl)
 		var channel = xml.getElementsByTagNameNS(NS[type], CHANNEL_NAME[type]);
 
 		// Check if channel is empty
-		if (!channel || channel.length === 0) {
+		if (!channel || channel.length === 0)
+		{
 			console.error("Parser2: No channel found in the provided XML.");
 			return; // Gracefully return
 		}
@@ -778,7 +779,14 @@ function fixRelativeLinks(hText, baseuri)
 
 		// Single-pass replacement
 		hText = hText.replace(regex, (match, quote, url) => {
+			if (url.startsWith("#")) return match;
 			if (url.startsWith("data:")) return match;
+			if (url.startsWith("mailto:")) return match;
+			if (url.startsWith("http://")) return match;
+			if (url.startsWith("https://")) return match;
+			if (url.startsWith("javascript:")) return match;
+			// if (url.indexOf('://') < url.indexOf('.')) return match;
+			// console.debug("fixRelativeLinks Single-pass replacement: ", regex, (match, quote, url));
 
 			try
 			{
@@ -1204,10 +1212,6 @@ function transformImageURLs(node, baseuri, type)
 		{
 			pattern: "/images-na.ssl-images-amazon.com/",
 			replacement: "/wsrv.nl/?url=https://images-na.ssl-images-amazon.com/"
-		},
-		{
-			pattern: "/i.ytimg.com/",
-			replacement: "/wsrv.nl/?url=https://i.ytimg.com/"
 		},
 		{
 			pattern: "/items.gog.com/",

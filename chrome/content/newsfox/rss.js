@@ -767,9 +767,11 @@ function doesArticleExist(feed, item)
 
 function downloadIcon(feed)
 {
+	// Check if favicon downloading is enabled
 	if (!gOptions.favicons)
 	{
-		for (var i = 0; i < gFmodel.size(); i++)
+		// Update icons for all feeds in the model
+		for (let i = 0; i < gFmodel.size(); i++)
 		{
 			if (gFmodel.get(i).storage)
 			{
@@ -786,6 +788,7 @@ function downloadIcon(feed)
 		if (feed.icon.src == null || feed.icon.src == "" || feed.icon.src == ICON_OK)
 		{
 			feed.icon.src = ICON_OK;
+
 			// don't guessHomepage before feed refreshed, if feed.homepage is null
 			if (gOptions.guessHomepage && feed.homepage == "")
 			{
@@ -793,73 +796,127 @@ function downloadIcon(feed)
 			}
 			if (feed.homepage != null && feed.homepage != "")
 			{
-				var favicon = feed.homepage.replace("index.html", "");
-				if (favicon.charAt(favicon.length - 1) != "/")
+				// Prepare fallback favicon URL
+				let fallbackFavicon = feed.homepage.replace("index.html", ""); // console.debug replace string with ""
+				if (fallbackFavicon.charAt(fallbackFavicon.length - 1) !== "/")
 				{
-					favicon += "/";
+					fallbackFavicon += "/";
 				}
-				favicon += "favicon.ico";
-				var file = NFgetProfileDir();
+				fallbackFavicon += "favicon.ico";
+
+				// Prepare file for saving icon
+				const file = NFgetProfileDir();
 				file.append(feed.uid + ".ico");
 
-				// Fetch the first 2048 bytes of the site
-				var xhr = new XMLHttpRequest();
+				// Fetch the first 3072 bytes of the site
+				const xhr = new XMLHttpRequest();
 				xhr.open('GET', feed.homepage, true);
-				xhr.setRequestHeader('Range', 'bytes=0-2047');
+				xhr.setRequestHeader('Range', 'bytes=0-3071');
+
 				xhr.onload = function()
 				{
-					if (xhr.status === 200)
+					if (xhr.status === 200 || xhr.status === 206)
 					{
 						const html = xhr.responseText;
+						// console.debug("favicon responseText: ", html);
 						const parser = new DOMParser();
 						const doc = parser.parseFromString(html, 'text/html');
+						// console.debug("favicon parsed responseText: ", doc);
 
-						// Look for a link tag with rel="icon" or rel="shortcut icon"
-						const faviconLink = doc.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
-						const faviconUrl = faviconLink ? faviconLink.href : null;
+						let faviconLink = null;
 
-						if (faviconUrl)
+						// Prioritized favicon selection
+						const selectors = [
+							'link[rel="icon"][sizes="32x32"]',
+							'link[rel="icon"][sizes="16x16"]',
+							'link[rel="shortcut icon"]',
+							'link[rel="icon"]',
+							'icon'
+						];
+
+						for (let selector of selectors)
 						{
-							// Validate favicon URL
-							const absoluteFaviconUrl = new URL(faviconUrl, feed.homepage).href; // Ensure faviconUrl is absolute
+							faviconLink = doc.querySelector(selector);
+							if (faviconLink) break;
+						}
+						// console.debug("favicon URL found: ", faviconLink);
 
-							// Check if absoluteFaviconUrl is valid before proceeding
+						if (faviconLink)
+						{
+						try
+						{
+							// Resolve favicon URL
+							// console.debug("faviconLink before Resolve: ", faviconLink);
+							const href = faviconLink.getAttribute('href') ||
+										 (faviconLink.tagName.toLowerCase() === 'icon' ? faviconLink.textContent.trim() : null);
+							// console.debug("faviconLink after Resolve: ", href);
+
+							if (!href)
+							{
+								throw new Error("No href found");
+							}
+
+							// Use resolveUrl function to get absolute URL
+							// const absoluteFaviconUrl = resolveUrl(href.replace("chrome://newsfox", ""), feed.homepage);
+							const absoluteFaviconUrl = resolveUrl(href, feed.homepage);
+							console.debug("absolute favicon URL: ", href, feed.homepage, absoluteFaviconUrl);
+
+							// Validate URL
 							if (!absoluteFaviconUrl ||
 								absoluteFaviconUrl.startsWith('chrome://') ||
 								absoluteFaviconUrl === '/')
 							{
-								console.error("Invalid absolute favicon URL: " + absoluteFaviconUrl);
-								getFavIcon(favicon, file); // Fallback to default favicon if URL is invalid
-								return; // Exit the function early
+								throw new Error("Invalid favicon URL");
 							}
 
+							// Additional URL validation
 							new URL(absoluteFaviconUrl); // This will throw if the URL is invalid
+
+							// Download favicon
 							getFavIcon(absoluteFaviconUrl, file);
+						}
+						catch (error)
+						{
+							console.error("Favicon URL resolution error:", error);
+							getFavIcon(fallbackFavicon, file); // Fallback to default favicon if URL is invalid
+						}
 						}
 						else
 						{
-							console.error("No favicon URL found, falling back to default.");
-							getFavIcon(favicon, file); // Fallback to default favicon if URL is invalid
+							// No favicon found, use fallback
+							getFavIcon(fallbackFavicon, file);
 						}
 					}
+					/*else if (xhr.status === 206) // Handle Partial Content
+					{
+						console.warn(`Partial content received for favicon from ${feed.homepage}: ${xhr.status}`);
+						// Retry fetching the favicon after a delay
+						setTimeout(() => {
+							console.log("Retrying to fetch favicon...");
+							getFavIcon(favicon, file); // Retry fetching the favicon
+						}, 2000); // Retry after 2 seconds
+					}*/
 					else
 					{
+						// HTTP error, use fallback
 						console.error(`Failed to fetch favicon from ${feed.homepage}: ${xhr.status} ${xhr.statusText}`);
-						getFavIcon(favicon, file); // Fallback to default favicon if fetch fails
+						getFavIcon(fallbackFavicon, file); // Fallback to default favicon if fetch fails
 					}
 				};
+
 				xhr.onerror = function()
 				{
-					console.error(`Network error while fetching favicon from ${feed.homepage}.`);
-					getFavIcon(favicon, file); // Fallback to default favicon if fetch fails
+					console.error(`Network error while fetching favicon from ${feed.homepage}`);
+					getFavIcon(fallbackFavicon, file); // Fallback to default favicon if fetch fails
 				};
+
 				xhr.send();
 			}
 		}
 	}
 }
 
-function getFavIcon(favicon,file)
+function getFavIcon(favicon, file)
 {
 	// Extended validation checks
 	if (!favicon || (favicon.startsWith('chrome://')) || (favicon == '/'))
@@ -886,7 +943,7 @@ function getFavIcon(favicon,file)
 		// Start the asynchronous download
 		IOchannel.asyncOpen(nfListener, null);
 	}
-	catch(e)
+	catch (e)
 	{
 		console.error("NewsFox: Error downloading favicon from " + favicon + " error details: " + e);
 	}

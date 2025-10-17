@@ -127,230 +127,120 @@ const resolvedUrlCache = new Map();
 const MAX_URL_CACHE_SIZE = 1000;
 
 /**
- * Gets a safe base URI for URL resolution
- * @param {Object} art - The article object
- * @param {Object} feed - The feed object
- * @param {Object} [xmlhttp] - Optional XMLHttpRequest object with response
- * @returns {string} - A safe base URI for URL resolution
+ * Resolves a URL relative to a base URI, handling various URL scenarios.
+ *
+ * @param {string} url - The URL to be resolved
+ * @param {string} [baseUri=''] - The base URI to resolve against (optional)
+ * @returns {string|null} The fully resolved URL, or null if resolution fails
+ * @throws {Error} Logs detailed error information if URL resolution encounters issues
+ *
+ * @description
+ * This function handles multiple URL resolution scenarios:
+ * - Handles null/undefined inputs
+ * - Skips processing for special URL schemes
+ * - Supports protocol-relative URLs
+ * - Supports root-relative URLs
+ * - Implements a caching mechanism
+ * - Provides context-aware error handling
  */
-function getSafeBaseUri(art, feed, xmlhttp)
+function resolveUrl(url, baseUri = '')
 {
-	const candidates = [];
-
-	// Validate inputs but don't return early - try best-effort processing
-	const validArt = art && typeof art === 'object';
-	const validFeed = feed && typeof feed === 'object';
-
-	if (!validArt)
-	{
-		console.error("Invalid article object provided to getSafeBaseUri");
-	}
-
-	if (!validFeed)
-	{
-		console.error("Invalid feed object provided to getSafeBaseUri");
-	}
-
-	// Ensure feed.url is always considered as a fallback
-	if (validFeed && feed.url && typeof feed.url === 'string') {
-		try
-		{
-			// Extract domain from feed URL to use as a base fallback
-			const urlParts = feed.url.match(/^(https?:\/\/[^\/]+)/i);
-			if (urlParts && urlParts[1])
-			{
-				candidates.push(
-				{
-					url: urlParts[1],
-					source: 'feed.url (domain)'
-				});
-			}
-		}
-		catch (e)
-		{
-			console.warn("Could not parse feed.url as base URI:", feed.url);
-		}
-	}
-
-	// Return first valid candidate with explicit null-checking
-	for (const candidate of candidates)
-	{
-		if (candidate.url && typeof candidate.url === 'string' &&
-			candidate.url.trim() !== '' &&
-			!candidate.url.startsWith('chrome://') &&
-			/^(https?|ftp|file):/.test(candidate.url))
-		{
-			return candidate.url;
-		}
-	}
-
-	console.warn("No valid base URI found from candidates");
-	return '';
-}
-
-/**
- * Enhanced URL resolution function with proper error handling
- * @param {string} url - The URL to resolve
- * @param {string} baseUri - The base URI to resolve against
- * @returns {string} The resolved URL
- */
-function resolveUrl(url, baseUri)
-{
-	// Context-aware empty URL handling - check the caller
-	if (!url)
-	{
-		// Track the call stack to help find where empty URLs are coming from
-		console.warn("Invalid URL provided to resolveUrl:", url, new Error().stack);
-		return '';
-	}
-
-	// Normalize URL to string (might be a URI object)
-	const urlStr = (typeof url === 'object' && url.spec) ? url.spec : String(url);
-
-	// Normalize baseUri to string
-	let baseUriStr = '';
-	if (baseUri)
-	{
-		if (typeof baseUri === 'object')
-		{
-			// Handle nsIURI objects
-			if (baseUri.spec) {
-				baseUriStr = baseUri.spec;
-			} else if (baseUri.href) {
-				baseUriStr = baseUri.href;
-			}
-		}
-		else
-		{
-			baseUriStr = String(baseUri);
-		}
-	}
-
-	// Cache check with normalized values
-	const cacheKey = `${urlStr}|${baseUriStr}`;
-	if (resolvedUrlCache.has(cacheKey)) {
-		return resolvedUrlCache.get(cacheKey);
-	}
-
-	// Skip processing for special cases
-	if (urlStr.startsWith('data:') ||
-		urlStr.startsWith('javascript:') ||
-		urlStr.startsWith('mailto:'))
-		{
-		return urlStr;
-		}
-
-	// Handle absolute URLs
-	if (urlStr.match(/^[a-z]+:\/\//i))
-	{
-		resolvedUrlCache.set(cacheKey, urlStr);
-		return urlStr;
-	}
-
-	// Handle chrome:// URLs
-	if (urlStr.startsWith('chrome://') || (baseUriStr && baseUriStr.startsWith('chrome://')))
-	{
-		console.warn("Skipping chrome:// URL resolution:", { url: urlStr, baseUri: baseUriStr });
-		return ''; // Return empty string for better security
-	}
-
-	// Skip resolution if no baseUri available
-	if (!baseUriStr)
-	{
-		return urlStr;
-	}
-
-	let resolved = '';
 	try
 	{
-		// Handle protocol-relative URLs
-		if (urlStr.startsWith('//'))
+		// Early validation for invalid inputs
+		if (!url)
 		{
-			resolved = 'https:' + urlStr;
+			console.warn("Invalid URL provided to resolveUrl:", url, baseUri, new Error().stack);
+			return '';
+		}
+
+		// Predefined list of special URL schemes to bypass processing
+		const specialSchemes = [
+			"#",
+			"data:",
+			"mailto:",
+			"ftp://",
+			"sftp://",
+			"http://",
+			"https://",
+			"javascript:"
+		];
+
+		// Quick early return for special URL schemes
+		if (specialSchemes.some(scheme => url.startsWith(scheme)))
+		{
+			return url;
+		}
+
+		// Optimize cache key generation
+		const cacheKey = `${url}|${baseUri}`;
+
+		// Check cache before processing
+		if (resolvedUrlCache.has(cacheKey))
+		{
+			return resolvedUrlCache.get(cacheKey);
+		}
+
+		let resolvedUrl = null;
+
+		// Handle protocol-relative URLs
+		if (url.startsWith('//'))
+		{
+			if (!baseUri) return null;
+
+			const ioService = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			const uri = ioService.newURI(baseUri, null, null);
+
+			resolvedUrl = `${uri.scheme}:${url}`;
 		}
 		// Handle root-relative URLs
-		else if (urlStr.startsWith('/'))
+		else if (url.startsWith('/'))
 		{
-			const { domain } = extractUrlComponents(baseUriStr);
-			resolved = domain ? domain + urlStr : '';
+			if (!baseUri) return null;
+
+			const ioService = Components.classes["@mozilla.org/network/io-service;1"]
+				.getService(Components.interfaces.nsIIOService);
+			const uri = ioService.newURI(baseUri, null, null);
+
+			resolvedUrl = `${uri.scheme}://${uri.host}${url}`;
 		}
-		// Handle relative paths
+		// Handle regular URLs
 		else
 		{
-			// Ensure baseUri ends with / but handle paths correctly
-			let base = baseUriStr;
-			if (!baseUriStr == "" && !baseUriStr.endsWith('/'))
-			{
-				// Handle case where baseUri is a file path
-				const lastSlashIndex = baseUriStr.lastIndexOf('/');
-				if (lastSlashIndex > 8) { // After http://
-					base = baseUriStr.substring(0, lastSlashIndex + 1);
-				} else {
-					base = baseUriStr + '/';
-				}
-			}
-
-			// Remove any ./ or multiple slashes
-			const cleanUrl = urlStr.replace(/^\.\//, '').replace(/\/+/g, '/');
-			resolved = base + cleanUrl;
+			resolvedUrl = new URL(url, baseUri).href;
 		}
+
+		// Implement cache management
+		if (resolvedUrlCache.size >= MAX_URL_CACHE_SIZE)
+		{
+			// Clean up oldest 20% of entries
+			const keysToRemove = Array.from(resolvedUrlCache.keys())
+				.slice(0, Math.floor(MAX_URL_CACHE_SIZE * 0.2));
+
+			keysToRemove.forEach(key => resolvedUrlCache.delete(key));
+		}
+
+		// Cache the resolved URL
+		resolvedUrlCache.set(cacheKey, resolvedUrl);
+
+		return resolvedUrl;
 	}
 	catch (e)
 	{
-		console.error("URL resolution error:", e.message, { url: urlStr, baseUri: baseUriStr });
-		return '';
-	}
+		console.error("URL resolution failed:", {
+			url,
+			baseUri,
+			errorMessage: error.message,
+			stack: error.stack
+		});
 
-	// Validate resolved URL
-	if (!isValidSafeUrl(resolved))
-	{
-		console.warn("URL resolution produced potentially unsafe URL:", resolved);
-		resolved = '';
+		return null;
 	}
-
-	// Cache management
-	if (resolvedUrlCache.size > MAX_URL_CACHE_SIZE)
-	{
-		// Clean up oldest 10% of entries
-		const keysToDelete = Math.floor(MAX_URL_CACHE_SIZE * 0.1);
-		const keys = Array.from(resolvedUrlCache.keys()).slice(0, keysToDelete);
-		keys.forEach(key => resolvedUrlCache.delete(key));
-	}
-
-	// Cache the result
-	resolvedUrlCache.set(cacheKey, resolved);
-	return resolved;
 }
 
 /**
- * Sanitizes URLs for resolution
- * @param {string} url - The URL to sanitize
- * @return {string} - The sanitized URL
- */
-function sanitizeUrlForResolution(url)
-{
-	if (!url) return '';
-
-	// Ensure we're working with a string
-	url = url.toString();
-
-	// Remove any trailing spaces or problematic characters
-	url = url.trim()
-		 .replace(/[\r\n\t]/g, '')
-		 .replace(/\\+/g, '/');
-
-	// Handle common problematic cases
-	if (url === '/')
-	{
-		console.warn("Found bare '/' URL which could cause chrome:// resolution issues");
-		return '';
-	}
-
-	return url;
-}
-
-/**
- * Get the newsfox directory
+ * Get the newsfox directory 
  */
 
 function getProfURL(profURL)
@@ -860,6 +750,10 @@ function traceEmptyUrlCalls()
 		if (!url)
 		{
 			console.error("EMPTY URL TRACE - Called from:", new Error().stack);
+		}
+		if (url == '/')
+		{
+			console.error("'/' URL TRACE - Called from:", new Error().stack);
 		}
 		return originalResolveUrl(url, baseUri);
 	};
