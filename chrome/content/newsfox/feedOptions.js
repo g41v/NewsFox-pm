@@ -308,20 +308,32 @@ function toggleIcon()
 
 function feedChange()
 {
-return true;
-	if (blurring) return;
+	if (blurring) return; // Check if already blurring
 	blurring = true;
-	var url = document.getElementById("url").value;
+
+	var urlElement = document.getElementById("url");
 	var authGroupbox = document.getElementById("authGroupbox");
-	if (url.substring(0,5) != "https")
-		authGroupbox.hidden = true;
-	else
+
+	if (!urlElement || !authGroupbox) {
+		console.error("feedChange Required elements not found.");
+		blurring = false;
+		return;
+	}
+
+	var url = urlElement.value;
+
+	// Check if the URL starts with "https"
+	if (url.startsWith("https")) {
 		authGroupbox.removeAttribute("hidden");
-// FF3 bugs, #392417, #371508: sizeToContent() broken, seems to work
-// with an assignment statement intervening between resizing event
-	blurring = false;
+	}
+	else
+	{
+		authGroupbox.hidden = true;
+	}
+
+	// Resize the content
 	sizeToContent();
-	return true;
+	blurring = false;
 }
 
 function styleChange()
