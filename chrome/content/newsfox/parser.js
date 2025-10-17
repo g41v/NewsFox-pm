@@ -57,103 +57,132 @@ const FEED_AUTHOR = [ "", "managingEditor", "author", "author" ];
 const ITEM_AUTHOR = [ "", "author", "author", "author" ];
 const HREF_NAME = [ "url", "url", "href", "href" ];
 
-const TAG_NAME = [ "a", "img", "area" ];
-const ATTR_NAME = [ "href", "src", "href" ];
+// Updated to include all tags that need link resolution
+const TAG_NAME = [ "a", "img", "area", "source", "link" ];
+const ATTR_NAME = [ "href", "src", "srcset", "data-src", "data-srcset" ];
 
-function Parser2(xml,baseUrl)
+function Parser2(xml, baseUrl)
 {
 	this.title = null;
 	this.link = null;
 	this.items = new Array();
 
-// type: 0=RSS1.0, 1=RSS2.0, 2=atom0.3, 3=atom1.0
-	this.parse = function(xml,type,baseUrl)
+	// type: 0=RSS1.0, 1=RSS2.0, 2=atom0.3, 3=atom1.0
+	this.parse = function(xml, type, baseUrl)
 	{
-		var channel = xml.getElementsByTagNameNS(NS[type],CHANNEL_NAME[type]);
-// BASE
-		var baseuri = adjustBase(null,baseUrl);
-		baseuri = adjustBase(baseuri,"/");
-		baseuri = getBaseURI(channel[0],baseuri,type);
-// TITLE
-		var title = channel[0].getElementsByTagNameNS(NS[type],"title");
-		if (title.length > 0) this.title = getText(title[0]);
-// HOMEPAGE
-		var uri = getLink(channel[0],baseuri,type);
-		if (uri) this.link = uri.resolve("");
-// FEED AUTHOR
-		var feedAuthor = getAuthor(channel[0],type,true);
+		// Validate inputs
+		if (!xml || !type) {
+			throw new Error("Parser2: Invalid input parameters");
+		}
 
-// ITEMS:
+		// DEBUGGING: Check for chrome:// URLs in baseUrl
+		if (baseUrl && typeof baseUrl === 'string' && baseUrl.startsWith('chrome://')) {
+			console.warn("Chrome URL detected in Parser2.parse baseUrl:", baseUrl);
+		}
+
+		// Ensure baseUrl is properly formatted
+		baseUrl = baseUrl || "";
+		if (baseUrl && !baseUrl.match(/^[a-z]+:/i)) {
+			baseUrl = "http://" + baseUrl;
+		}
+
+		var channel = xml.getElementsByTagNameNS(NS[type], CHANNEL_NAME[type]);
+
+		// Check if channel is empty
+		if (!channel || channel.length === 0) {
+			console.error("Parser2: No channel found in the provided XML.");
+			throw new Error("Parser2: Invalid feed: No channel found.");
+			return; // Gracefully return
+		}
+
+		// BASE - Improve base URI handling
+		var baseuri = baseUrl;
+		if (channel[0]) {
+			baseuri = getBaseURI(channel[0], baseuri, type) || baseuri;
+		}
+
+		// TITLE
+		var title = channel[0].getElementsByTagNameNS(NS[type], "title");
+		if (title.length > 0) this.title = getText(title[0]);
+
+		// HOMEPAGE
+		var uri = getLink(channel[0], baseuri, type);
+		if (uri) this.link = uri.resolve("");
+
+		// FEED AUTHOR
+		var feedAuthor = getAuthor(channel[0], type, true);
+
+		// ITEMS:
 		var now = new Date();
 		var itemContainer = (type == 0) ? xml : channel[0];
-		var items = itemContainer.getElementsByTagNameNS(NS[type],ENTRY_NAME[type]);
-		for (var i=0; i<items.length; i++)
+		var items = itemContainer.getElementsByTagNameNS(NS[type], ENTRY_NAME[type]);
+		for (var i = 0; i < items.length; i++)
 		{
 			var item = new Article();
-// ITEM:BASE
+			// ITEM:BASE
 			var itembase = null;
-			itembase = getBaseURI(items[i],baseuri,type);
-// ITEM:TITLE
-			title = items[i].getElementsByTagNameNS(NS[type],"title");
-			for (var j=0; j<title.length; j++)
-				if (title[j].parentNode == items[i]) item.title = getXhtml(fixLinks(title[j],itembase,type),type);
-// ITEM:LINK
-			var uri = getLink(items[i],itembase,type);
+			itembase = getBaseURI(items[i], baseuri, type);
+			// ITEM:TITLE
+			title = items[i].getElementsByTagNameNS(NS[type], "title");
+			for (var j = 0; j < title.length; j++)
+				if (title[j].parentNode == items[i]) item.title = getXhtml(fixLinks(title[j], itembase, type), type);
+			// ITEM:LINK
+			var uri = getLink(items[i], itembase, type);
 			// need spec instead of resolve to pick up # anchors in link
 			if (uri) item.link = uri.spec;
 			if (!item.link) item.link = NO_LINK;
-// ITEM:ID
-			var id = items[i].getElementsByTagNameNS(NS[type],ID_NAME[type]);
-			for (var j=0; j<id.length; j++)
+			// ITEM:ID
+			var id = items[i].getElementsByTagNameNS(NS[type], ID_NAME[type]);
+			for (var j = 0; j < id.length; j++)
 				if (id[j].parentNode == items[i]) item.id = getText(id[j]);
 			if (!item.id && item.link != NO_LINK) item.id = item.link;
-			if (item.id && item.id.substring(0,5) == "http:" && item.link == NO_LINK)
+			if (item.id && item.id.substring(0, 5) == "http:" && item.link == NO_LINK)
 				item.link = (uri) ? uri.resolve(item.id) : item.id;
-// ITEM:BODY
-			var body = items[i].getElementsByTagNameNS(NS[type],CONTENT_NAME[type]);
+			// ITEM:BODY
+			var body = items[i].getElementsByTagNameNS(NS[type], CONTENT_NAME[type]);
 			if (body.length > 0)
-				item.body = getXhtml(fixLinks(body[0],itembase,type),type);
+				item.body = getXhtml(fixLinks(body[0], itembase, type), type);
 			if (!item.body && type >= 2)  // atom
 			{
-				var body = items[i].getElementsByTagNameNS(NS[type],"summary");
+				var body = items[i].getElementsByTagNameNS(NS[type], "summary");
 				if (body.length > 0)
-					{
-					item.body = getXhtml(fixLinks(body[0],itembase,type),type);
+				{
+					item.body = getXhtml(fixLinks(body[0], itembase, type), type);
 					if (!item.body)
-						item.body = getText(fixLinks(body[0],itembase,type));
-					}
+						item.body = getText(fixLinks(body[0], itembase, type));
+				}
 			}
 			if (type < 2)  // rss
 			{
-				var body = items[i].getElementsByTagNameNS(CONTENT,"encoded");
-				if (body.length > 0) item.body = getText(fixLinks(body[0], itembase,type));
+				var body = items[i].getElementsByTagNameNS(CONTENT, "encoded");
+				if (body.length > 0) item.body = getText(fixLinks(body[0], itembase, type));
 			}
-// ITEM:DATE
+			// ITEM:DATE
 			item.date = NO_DATE;
 			var index = 0;
-			var idate = items[i].getElementsByTagNameNS(NS[type],DATE_NAME[type]);
+			var idate = items[i].getElementsByTagNameNS(NS[type], DATE_NAME[type]);
 			if (idate.length == 0 && type >= 2)
 			{
-				idate = items[i].getElementsByTagNameNS(NS[type],DATE_NAME2[type]);
+				idate = items[i].getElementsByTagNameNS(NS[type], DATE_NAME2[type]);
 				index = 1;
 			}
 			if (idate.length == 0)
 			{
-				idate = items[i].getElementsByTagNameNS(DC,"date");
+				idate = items[i].getElementsByTagNameNS(DC, "date");
 				index = 2;
 			}
 			var dateIndex = -1;
-			for (var j=0; j<idate.length; j++)
+			for (var j = 0; j < idate.length; j++)
 				if (idate[j].parentNode == items[i]) dateIndex = j;
 			if (dateIndex != -1)
 				if (index == 0 && type == 1)
 					item.date = setRFCDate(getText(idate[dateIndex]));
 				else
 					item.date = setTZDate(getText(idate[dateIndex]));
-// date adjustment
-			if (!gOptions.dateNoneStrict && item.date < TOP_NO_DATE 
+			// date adjustment
+			if (!gOptions.dateNoneStrict && item.date < TOP_NO_DATE
 				&& item.date > TOP_INVALID_DATE) item.date = now;
-			if (!gOptions.dateInvalidStrict && item.date < TOP_INVALID_DATE 
+			if (!gOptions.dateInvalidStrict && item.date < TOP_INVALID_DATE
 				&& item.date > TOP_FUTURE_DATE) item.date = now;
 			if (item.date - now > 10 * 60 * 1000)   // 10 minutes
 			{
@@ -163,74 +192,62 @@ function Parser2(xml,baseUrl)
 				else
 					item.date = now;
 			}
-// ITEM:CATEGORIES
-			var cats = items[i].getElementsByTagNameNS(NS[type],CATEGORY_NAME[type]);
+			// ITEM:CATEGORIES
+			var cats = items[i].getElementsByTagNameNS(NS[type], CATEGORY_NAME[type]);
 			if (cats.length == 0 && type <= 1)
-				cats = items[i].getElementsByTagNameNS(DC,"subject");
+				cats = items[i].getElementsByTagNameNS(DC, "subject");
 			var cat = "";
 			var newcat;
-			for (var j=0; j<cats.length; j++)
+			for (var j = 0; j < cats.length; j++)
 			{
 				if (type < 2)
 					newcat = getText(cats[j]);
 				else
 					newcat = cats[j].getAttribute("term");
 				newcat = newcat.replace(/\//g, "&#047;");
-				cat = mergeCats(cat,newcat,null);
+				cat = mergeCats(cat, newcat, null);
 			}
 			item.category = cat;
-// ITEM:ENCLOSURES
+			// ITEM:ENCLOSURES
 			if (type < 2)
 			{
-				var enc = items[i].getElementsByTagNameNS(NS[type],"enclosure");
-				for (var j=0; j<enc.length; j++)
-					item.enclosures.push(newEncl(enc[j],HREF_NAME[type]));
+				var enc = items[i].getElementsByTagNameNS(NS[type], "enclosure");
+				for (var j = 0; j < enc.length; j++)
+					item.enclosures.push(newEncl(enc[j], HREF_NAME[type]));
 			}
 			else
 			{
-				var enc = items[i].getElementsByTagNameNS(NS[type],"link");
-				for (var j=0; j<enc.length; j++)
+				var enc = items[i].getElementsByTagNameNS(NS[type], "link");
+				for (var j = 0; j < enc.length; j++)
 					if (enc[j].hasAttribute("rel") && enc[j].getAttribute("rel") == "enclosure")
-						item.enclosures.push(newEncl(enc[j],HREF_NAME[type]));
+						item.enclosures.push(newEncl(enc[j], HREF_NAME[type]));
 			}
-			var mediaContent = items[i].getElementsByTagNameNS(MEDIA,"content");
-			for (var j=0; j<mediaContent.length; j++)
+			var mediaContent = items[i].getElementsByTagNameNS(MEDIA, "content");
+			for (var j = 0; j < mediaContent.length; j++)
 				if (mediaContent[j].hasAttribute("url") && mediaContent[j].getAttribute("url") != "")
-					item.enclosures.push(newEncl(mediaContent[j],"url"));
-// ITEM:SOURCE
-			var source = items[i].getElementsByTagNameNS(NS[type],"source");
+					item.enclosures.push(newEncl(mediaContent[j], "url"));
+			// ITEM:SOURCE
+			var source = items[i].getElementsByTagNameNS(NS[type], "source");
 			if (source.length > 0)
-			{
 				if (type < 2)  // RSS
 				{
 					item.source.name = getText(source[0]);
 					if (source[0].hasAttribute("url"))
-					{
 						item.source.url = source[0].getAttribute("url");
-					}
-					else
-					{
-						console.error("Source does not have a URL attribute.");
-					}
 				}
 				else
 				{
-					var titleArray = source[0].getElementsByTagNameNS(NS[type],"title");
+					var titleArray = source[0].getElementsByTagNameNS(NS[type], "title");
 					if (titleArray.length > 0)
-					{
-							item.source.name = getXhtml(titleArray[0],type);
-					}
+						item.source.name = getXhtml(titleArray[0], type);
 					else
-					{
 						item.source.name = "...";
-					}
-					var uri = getLink(source[0],itembase,type);
+					var uri = getLink(source[0], itembase, type);
 					if (uri) item.source.url = uri.spec;
 				}
-			}
 
-// ITEM:AUTHOR
-			item.author = getAuthor(items[i],type,false);
+			// ITEM:AUTHOR
+			item.author = getAuthor(items[i], type, false);
 			if (!item.author) item.author = feedAuthor;
 			if (!item.author) item.author = "";
 
@@ -238,28 +255,41 @@ function Parser2(xml,baseUrl)
 		}
 	}
 
-// MAIN
+	// MAIN
 	var root = xml.documentElement.localName.toLowerCase();
 	var type = -1;
 	var errortype = ERROR_OK;
-	for (var i=1; i<4; i++)
-		if (xml.getElementsByTagNameNS(NS[i],FEED_NAME[i]).length) type = i;
-	if (xml.getElementsByTagNameNS(RDF_NS,"RDF").length)
+	for (var i = 1; i < 4; i++)
+		if (xml.getElementsByTagNameNS(NS[i], FEED_NAME[i]).length) type = i;
+	if (xml.getElementsByTagNameNS(RDF_NS, "RDF").length)
 	{
 		type = 0;
-		var ns = xml.getElementsByTagNameNS(RDF_NS,"RDF")[0].getAttribute("xmlns");
+		var ns = xml.getElementsByTagNameNS(RDF_NS, "RDF")[0].getAttribute("xmlns");
 		if (ns && ns != "null" && ns.length) NS[0] = ns;
 	}
 	if (type == -1)
 		if (root == "parsererror") errortype = ERROR_INVALID_FEED_URL;
 		else errortype = ERROR_UNKNOWN_FEED_FORMAT + root;
 	if (errortype != ERROR_OK) throw errortype;
-	this.parse(xml,type,baseUrl);
+	this.parse(xml, type, baseUrl);
 }
 
-function getBaseURI(xml,base,type)
+function getBaseURI(xml, base, type)
 {
+	if (!xml || typeof base === 'undefined') {
+		console.warn("Invalid getBaseURI input:", { xml, base, type });
+		return null;
+	}
+
+	// DEBUGGING: Check for chrome:// URLs in base
+	if (base && typeof base === 'string' && base.startsWith('chrome://')) {
+		console.warn("Chrome URL detected in getBaseURI base:", base);
+		// Don't process or return chrome:// URLs as base URIs for content
+		return null;
+	}
+
 	var baseuri = base;
+
 	if (xml.hasAttribute("xml:base"))
 		baseuri = adjustBase(baseuri,xml.getAttribute("xml:base"));
 	baseuri = getAtomSelfLink(xml,baseuri);
@@ -268,37 +298,64 @@ function getBaseURI(xml,base,type)
 
 function adjustBase(baseuri, url)
 {
-	var ioSvc = Components.classes['@mozilla.org/network/io-service;1']
-				.getService(Components.interfaces.nsIIOService);
-	try {
-		// Handle protocol-relative URLs
-		if(url.startsWith('//'))
-		{
-			url = baseuri.scheme + ':' + url;
-		}
-		// Create and return the new URI
-		return ioSvc.newURI(url, null, baseuri);
+	if (!url) return baseuri;
+
+	try
+	{
+		// First, try to use our global resolveUrl function for consistency
+		var spec = resolveUrl(url, baseuri ? baseuri.spec : null);
+
+		// Create a URI-like object compatible with the codebase
+		return {
+			spec: spec,
+			resolve: function(relativeUrl) {
+				return resolveUrl(relativeUrl, this.spec);
+			},
+			scheme: (function() {
+				var match = spec.match(/^([a-z][a-z0-9+.-]*):\/\//i);
+				return match ? match[1] : "";
+			})(),
+			host: (function() {
+				var match = spec.match(/^[a-z][a-z0-9+.-]*:\/\/([^\/]+)/i);
+				return match ? match[1] : "";
+			})()
+		};
 	}
-	catch(e) {
-		// Log error
-		if (e instanceof Components.Exception)
+	catch(e)
+	{
+		// Fallback to original implementation if resolveUrl fails
+		try
 		{
-			console.error("Components.Exception: " + e.message);
+			// Get the IO Service from Mozilla's XPCOM components
+			var ioSvc = Components.classes['@mozilla.org/network/io-service;1']
+								 .getService(Components.interfaces.nsIIOService);
+
+			// Attempt to create a new URI with the provided base URI and URL
+			return ioSvc.newURI(url, null, baseuri);
 		}
-		else
+		catch(e2)
 		{
-		console.error("Failed to adjust base URI: " + e);
+			console.error("adjustBase failed:", { baseuri, url, error: e2.message });
+			// Return null if URI creation fails
+			return null;
 		}
-		return null;
 	}
 }
 
-function getAtomSelfLink(xml,baseuri)
+function getAtomSelfLink(xml, baseuri)
 {
+	// Validate inputs
+	if (!xml || !baseuri)
+	{
+		console.error("Invalid getAtomSelfLink input: xml (" + xml + ") and baseuri (" + baseuri + ") must be provided.", { xml, baseuri });
+		return baseuri;
+	}
+
 	var url = null;
-	var links = xml.getElementsByTagNameNS(NS[3],"link");
+	var links = xml.getElementsByTagNameNS(NS[3], "link");
 	if (links.length == 0) return baseuri;
-	for (var i=0; i<links.length; i++)
+
+	for (var i = 0; i < links.length; i++)
 	{
 		if (links[i].parentNode == xml && links[i].hasAttribute("rel") && links[i].getAttribute("rel") == "self")
 		{
@@ -306,41 +363,102 @@ function getAtomSelfLink(xml,baseuri)
 			break;
 		}
 	}
+
 	if (url && url.indexOf("feeds.feedburner.com") > -1) return baseuri;
-	if (url) return adjustBase(baseuri,url);
+
+	if (url)
+	{
+		try
+		{
+			// Create a new nsIURI-compatible object using our resolved URL
+			var spec = resolveUrl(url, baseuri.spec);
+			return {
+				spec: spec,
+				resolve: function(relativeUrl) {
+					return resolveUrl(relativeUrl, this.spec);
+				}
+			};
+		}
+		catch (e)
+		{
+			console.error("Error creating URI object in getAtomSelfLink:", e);
+			return baseuri;
+		}
+	}
+
 	return baseuri;
 }
 
-function getLink(xml,baseuri,type)
+function getLink(xml, baseuri, type)
 {
-	var newuri = null;
-	var url = null;
-	var links = xml.getElementsByTagNameNS(NS[type],"link");
-	if (links.length == 0) return url;
-	if (type < 2)  // RSS
+	// Validate inputs
+	if (!xml || !baseuri || typeof type !== 'number')
 	{
-		for (var i=0; i<links.length; i++)
+		console.error("Invalid getLink input: xml (" + xml + "), baseuri (" + baseuri + "), and type (" + type + ") must be provided.", { xml, baseuri, type });
+		return null; // Return null if inputs are invalid
+	}
+
+	var url = null;
+	var links = xml.getElementsByTagNameNS(NS[type], "link");
+
+	if (links.length == 0) return url;
+
+	if (type < 2) // RSS
+	{
+		for (var i = 0; i < links.length; i++)
 		{
 			if (links[i].parentNode == xml)
 			{
-				url = getText(links[i]);
+				// First check for href attribute
+				if (links[i].hasAttribute("href"))
+				{
+					url = links[i].getAttribute("href");
+				}
+				// Fallback to text content if no href
+				else
+				{
+					url = getText(links[i]);
+				}
 				break;
 			}
 		}
 	}
-	else
+	else // Atom
 	{
-		for (var i=0; i<links.length; i++)
+		for (var i = 0; i < links.length; i++)
 		{
-			if (links[i].parentNode == xml && (!links[i].hasAttribute("rel") || links[i].getAttribute("rel") == "alternate" || links[i].getAttribute("rel") == "http://www.iana.org/assignments/relation/alternate"))
+			if (links[i].parentNode == xml &&
+				(!links[i].hasAttribute("rel") ||
+				 links[i].getAttribute("rel") == "alternate" ||
+				 links[i].getAttribute("rel") == "http://www.iana.org/assignments/relation/alternate"))
 			{
 				url = links[i].getAttribute("href");
 				break;
 			}
 		}
 	}
-	var newuri = adjustBase(baseuri,url);
-	return newuri;
+
+	// If a URL was found, resolve it
+	if (url)
+	{
+		try
+		{
+			// Use our global resolveUrl function
+			return {
+				spec: resolveUrl(url, baseuri.spec),
+				resolve: function(relativeUrl) {
+					return resolveUrl(relativeUrl, this.spec);
+				}
+			};
+		}
+		catch (e)
+		{
+			console.error("Error resolving URL in getLink:", e);
+			return null;
+		}
+	}
+
+	return null;
 }
 
 function setRFCDate(rfcDate)
@@ -388,12 +506,30 @@ function setTZDate(isoDate)
 	}
 }
 
-function fixLinks(node, baseuri,type)
+function fixLinks(node, baseuri, type)
 {
+	if (!node || !baseuri) {
+		console.warn("fixLinks called with invalid parameters:", { node, baseuri, type });
+		return;
+	}
+
+	// Ensure baseuri is a string
+	if (typeof baseuri === 'object' && baseuri.spec) {
+		baseuri = baseuri.spec;
+	}
+
+	// Validate baseuri format
+	if (!baseuri.match(/^[a-z]+:/i)) {
+		console.warn("fixLinks: Invalid base URI format:", baseuri);
+		return;
+	}
+
 	if (gOptions.fixyoutube1)
 		fixYoutube1(node, baseuri, type);
 	if (gOptions.wmode)
 		adjustWmode(node, baseuri, type);
+	if (gOptions.transformImageURLs)
+		transformImageURLs(node, baseuri, type);
 
 	var nType = node.getAttribute("type");
 	if (!gOptions.openInViewPane)
@@ -410,17 +546,21 @@ function fixLinks(node, baseuri,type)
 			var hText = node.textContent;
 			if (hText == "") return node;
 			hText = encodeNewlineInPreTag(hText);
-// needed to avoid <a\nhref=...
+			// needed to avoid <a\nhref=...
 			hText = hText.replace(/\n/g," ");
-// hack, seem to need / in fixRelativeLinks, from bug#25459
+			// hack, seem to need / in fixRelativeLinks, from bug#25459
 			hText = hText.replace(/&#x2F;/g,"/");
 			node.textContent = makeTarget_Blank(hText);
 		}
 	}
-	baseuri = getBaseURI(node,baseuri,type);
+	baseuri = getBaseURI(node, baseuri, type);
 	if (!baseuri || NFgetPref("z.dontFixRelativeLinks", "bool", false))
 	{
-		console.error("fixLinks: Failed to get a valid base URI." + node, baseuri, type);
+		console.error("fixLinks: Failed to get a valid base URI.", {
+			node: node.nodeName,
+			baseuri: baseuri,
+			type: type
+		});
 		return node;
 	}
 	if (nType == "xhtml")
@@ -430,7 +570,12 @@ function fixLinks(node, baseuri,type)
 			var kids = node.getElementsByTagNameNS(XHTML,TAG_NAME[i]);
 			for (var j=0; j<kids.length; j++)
 				if (kids[j].hasAttribute(ATTR_NAME[i]))
-					kids[j].setAttribute(ATTR_NAME[i],baseuri.resolve(kids[j].getAttribute(ATTR_NAME[i])));
+				{
+					// Use global resolveUrl instead of baseuri.resolve for xhtml tags
+					var attrValue = kids[j].getAttribute(ATTR_NAME[i]);
+					var resolvedValue = resolveUrl(attrValue, baseuri);
+					kids[j].setAttribute(ATTR_NAME[i], resolvedValue);
+				}
 		}
 	}
 	else if (type <= 1 || nType == "html" || nType == "text/html")
@@ -487,159 +632,107 @@ function makeTarget_Blank(hText)
 	return hText;
 }
 
+/**
+ * Resolves relative URLs in HTML content to absolute URLs using a base URI.
+ *
+ * @param {string} hText - The HTML text content to process
+ * @param {string|object} baseuri - The base URI to resolve against, either as a string or an object with a 'spec' property
+ * @returns {string} The HTML content with resolved URLs
+ *
+ * @throws {Error} Logs error if baseuri is invalid or missing
+ *
+ * @description
+ * Processes HTML content and resolves relative URLs in various attributes:
+ * - Standard link attributes (href, src)
+ * - Responsive image attributes (srcset)
+ * - Lazy-loading attributes (data-src, data-srcset)
+ *
+ * Handles multiple URL formats:
+ * - Absolute URLs (left unchanged)
+ * - Protocol-relative URLs (//example.com)
+ * - Root-relative URLs (/path)
+ * - Relative URLs (path/to/resource)
+ *
+ * Preserves:
+ * - URL descriptors in srcset attributes
+ * - Data URLs
+ * - Original URLs if resolution fails
+ */
 function fixRelativeLinks(hText, baseuri)
 {
-	// Extended to handle extra types of links and lazy loadin of images with placeholders
-	// Early return if no text or no baseuri
-	if (!hText || !baseuri)
-	{
-		console.error("fixRelativeLinks: Invalid input", { hText, baseuri });
+	// Cache commonly used values
+	const baseuriSpec = typeof baseuri === 'string' ? baseuri : (baseuri?.spec || null);
+
+	if (!baseuriSpec) {
+		console.error("fixRelativeLinks: Invalid or missing baseuri");
 		return hText;
 	}
 
-	// Define attribute patterns once
-	const patterns =
-	{
-		a: /href\s*=\s*(['"])(.*?)\1/i,
-		img:
-		{
-			src: /src\s*=\s*(['"])(.*?)\1/i,
-			srcset: /srcset\s*=\s*(['"])(.*?)\1/i,
-			dataSrc: /data-src\s*=\s*(['"])(.*?)\1/i,
-			dataSrcset: /data-srcset\s*=\s*(['"])(.*?)\1/i
-		},
-		area: /href\s*=\s*(['"])(.*?)\1/i,
-		link: /href\s*=\s*(['"])(.*?)\1/i, // For <link> tags
-		fontFace: /url\(\s*(['"]?)(.*?)\1\s*\)/g // For @font-face URLs in CSS
-	};
+	// Pre-compile regular expressions
+	const tagRegexes = new Map();
+	const srcsetRegex = /<img\s+[^>]*?srcset\s*=\s*(['"])([^'"]*)\1/gi;
+	const dataSrcsetRegex = /<img\s+[^>]*?data-srcset\s*=\s*(['"])([^'"]*)\1/gi;
 
-	// Process each tag type
-	for (const tag of TAG_NAME)
-	{
-		let position = hText.length;
-		const tagPattern = new RegExp(`<${tag}\\s`, 'gi');
-		
-		while (position > -1)
-		{
-			// Find the last occurrence of the tag before position
-			const tagMatch = hText.substring(0, position).lastIndexOf(`<${tag} `);
-			if (tagMatch === -1) break;
-			
-			position = tagMatch;
-			
-			// Find the closing bracket
-			const closeTag = hText.indexOf('>', position);
-			if (closeTag === -1) break;
+	// Process standard attributes more efficiently
+	for (let i = 0; i < TAG_NAME.length; i++) {
+		const tag = TAG_NAME[i];
+		let attr;
 
-			// Get the tag content
-			const tagContent = hText.substring(position, closeTag);
-			
-			if (tag === 'img')
-			{
-				// Handle multiple attributes for img tags
-				for (const [attrName, pattern] of Object.entries(patterns.img))
-				{
-					const match = pattern.exec(tagContent);
-					if (match)
-					{
-						const [fullMatch, quote, url] = match;
-
-						// Check for lazy loading with data-src or data-srcset
-						if (attrName === 'src')
-						{
-							const dataSrcMatch = patterns.img.dataSrc.exec(tagContent);
-							if (dataSrcMatch)
-							{
-								const [dataSrcFullMatch, dataSrcQuote, dataSrcUrl] = dataSrcMatch;
-								const resolvedDataSrcUrl = baseuri.resolve(dataSrcUrl);
-								if (resolvedDataSrcUrl)
-								{
-									const newAttr = `${match[0].split(url)[0]}${resolvedDataSrcUrl}${quote}`;
-									const startPos = position + tagContent.indexOf(match[0]);
-									hText = hText.substring(0, startPos) + newAttr + 
-										   hText.substring(startPos + fullMatch.length);
-								}
-							}
-						}
-						else if (attrName === 'srcset')
-						{
-							// Handle srcset format: "url1 1x, url2 2x"
-							const sources = url.split(',').map(src => {
-								const [sourceUrl, descriptor] = src.trim().split(/\s+/);
-								const resolvedUrl = baseuri.resolve(sourceUrl);
-								return resolvedUrl ? `${resolvedUrl} ${descriptor || ''}` : src.trim();
-							});
-				
-							const newAttr = `${match[0].split(url)[0]}${sources.join(', ')}${quote}`;
-							const startPos = position + tagContent.indexOf(match[0]);
-							hText = hText.substring(0, startPos) + newAttr + 
-								   hText.substring(startPos + fullMatch.length);
-						}
-					}
-				}
-			}
-			else if (tag === 'link')
-			{
-				// Handle href for <link> tags
-				const match = patterns.link.exec(tagContent);
-				if (match)
-				{
-					const [fullMatch, quote, url] = match;
-					const resolvedUrl = baseuri.resolve(url);
-					
-					if (resolvedUrl)
-					{
-						const startPos = position + tagContent.indexOf(match[0]);
-						const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
-						hText = hText.substring(0, startPos) + newAttr + 
-							   hText.substring(startPos + fullMatch.length);
-					}
-				}
-			}
-			else
-			{
-				// Handle href for a and area tags
-				const pattern = patterns[tag];
-				const match = pattern.exec(tagContent);
-
-				if (match)
-				{
-					const [fullMatch, quote, url] = match;
-					const resolvedUrl = baseuri.resolve(url);
-					
-					if (resolvedUrl)
-					{
-						const startPos = position + tagContent.indexOf(match[0]);
-						const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
-						hText = hText.substring(0, startPos) + newAttr + 
-							   hText.substring(startPos + fullMatch.length);
-					}
-				}
-			}
-			
-			position--;
+		// Map tags to their primary attributes
+		if (tag === "a" || tag === "area" || tag === "link") {
+			attr = "href";
+		} else if (tag === "img" || tag === "source") {
+			attr = "src";
+		} else {
+			continue;
 		}
-	}
 
-	// Handle @font-face URLs in CSS
-	const fontFaceMatches = hText.match(patterns.fontFace);
-	if (fontFaceMatches)
-	{
-		fontFaceMatches.forEach(match => {
-			const urlMatch = patterns.fontFace.exec(match);
-			if (urlMatch)
-			{
-				const [fullMatch, quote, url] = urlMatch;
-				const resolvedUrl = baseuri.resolve(url);
-				if (resolvedUrl)
-				{
-					hText = hText.replace(fullMatch, `url(${quote}${resolvedUrl}${quote})`);
-				}
+		// Create and cache regex for this tag/attribute combination
+		const regex = new RegExp(`<${tag}\\s+[^>]*?${attr}\\s*=\\s*(['"])([^'"]*?)\\1`, 'gi');
+		tagRegexes.set(`${tag}-${attr}`, regex);
+
+		// Single-pass replacement
+		hText = hText.replace(regex, (match, quote, url) => {
+			if (url.startsWith("data:")) return match;
+
+			try {
+				const resolvedUrl = resolveUrl(url, baseuriSpec);
+				return match.replace(quote + url + quote, quote + resolvedUrl + quote);
+			} catch (e) {
+				console.error(`Error resolving ${attr} URL:`, e.message,
+							{ tag, attr, url, baseUri: baseuriSpec });
+				return match;
 			}
 		});
 	}
 
-	return hText;
+	// Helper function for processing srcset-style attributes
+	const processSrcsetAttribute = (match, quote, srcsetValue) => {
+		if (!srcsetValue) return match;
+
+		try {
+			const newSrcset = srcsetValue
+				.split(',')
+				.map(part => {
+					const [url, ...descriptors] = part.trim().split(/\s+/);
+					if (url.startsWith("data:")) return part.trim();
+					return resolveUrl(url, baseuriSpec) + (descriptors.length ? ' ' + descriptors.join(' ') : '');
+				})
+				.join(', ');
+
+			return match.replace(quote + srcsetValue + quote, quote + newSrcset + quote);
+		} catch (e) {
+			console.error("Error resolving srcset URLs:", e.message,
+						 { srcsetValue, baseUri: baseuriSpec });
+			return match;
+		}
+	};
+
+	// Process srcset and data-srcset attributes
+	hText = hText.replace(srcsetRegex, processSrcsetAttribute);
+	hText = hText.replace(dataSrcsetRegex, processSrcsetAttribute);
+
+	return hText; // Return the modified HTML text with resolved links
 }
 
 function getXhtml(node,type)
@@ -650,22 +743,9 @@ function getXhtml(node,type)
 		var serializer = new XMLSerializer();
 		var xml = "";
 	// have to watch out for space before the atom <div>, can only be one <div>
-		try
-		{
 		for (var i=0; i<node.childNodes.length; i++)
-			{
 			if (node.childNodes[i].localName == "div")
-				{
 				xml = serializer.serializeToString(node.childNodes[i]);
-				}
-			}
-		}
-		// Return empty string on error
-		catch (e)
-		{
-		console.error("Error serializing XHTML: " + e);
-		return "";
-		}
 	// div can't be part of content, need to retain namespaces
 		xml = changeDivToSpan(xml);
 		return "<xhtml>" + stringTrim(xml) + "</xhtml>";
@@ -995,13 +1075,13 @@ function fixYoutube1(node, baseuri, type)
 			{
 				var index1 = hText.lastIndexOf("iframe",index);
 				var index2 = hText.indexOf("iframe",index+21);
-				hText = hText.substring(0,index1) + "embed" + hText.substring(index1+6,index) + "www.youtube.com\/v" + hText.substring(index+21,index2) + "embed" + hText.substring(index2+6);
+				hText = hText.substring(0, index1) + "embed" + hText.substring(index1 + 6, index) + "www.youtube.com\/v" + hText.substring(index + 21, index2) + "embed" + hText.substring(index2 + 6);
 //				hText = hText.substring(0,index) + "www.youtube.com\/v" + hText.substring(index+21);
 				node.textContent = hText;
 			}
 			catch (e)
 			{
-			console.error("Error processing YouTube embed: " + e.name, e.message, e);
+			console.error("Error processing YouTube embed: " + e.name + "," + e.message, { e });
 			}
 			}
 			index--;

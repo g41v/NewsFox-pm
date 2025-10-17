@@ -315,7 +315,7 @@ function feedChange()
 	var authGroupbox = document.getElementById("authGroupbox");
 
 	if (!urlElement || !authGroupbox) {
-		console.error("feedChange: Required elements not found." + urlElement, authGroupbox);
+		console.error("feedChange: Required elements not found.", { urlElement, authGroupbox});
 		blurring = false;
 		return;
 	}
@@ -323,7 +323,8 @@ function feedChange()
 	var url = urlElement.value;
 
 	// Check if the URL starts with "https"
-	if (url.startsWith("https")) {
+	if (url.startsWith("https"))
+	{
 		authGroupbox.removeAttribute("hidden");
 	}
 	else
@@ -332,8 +333,11 @@ function feedChange()
 	}
 
 	// Resize the content
-	sizeToContent();
+	// FF3 bugs, #392417, #371508: sizeToContent() broken, seems to work
+	// with an assignment statement intervening between resizing event
 	blurring = false;
+	sizeToContent();
+	return true;
 }
 
 function styleChange()

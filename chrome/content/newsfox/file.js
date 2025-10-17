@@ -212,11 +212,32 @@ function getTextView(art, feed)
 	}
 	var body = art.body;
 	if (art.Xtend && art.Xbody.length > 0) body = art.Xbody;
-	var p = getXhtmlBody(body,"p",doc,artURI,feed.getStyle(),tagsToRemove);
+
+	// Get the content as an XHTML body element
+	var p = getXhtmlBody(body, "p", doc, artURI, feed.getStyle(), tagsToRemove);
+
+	/*
+	// Process lazy loading at display time
+	if (gOptions.processLazyLoading) {
+		try {
+			// Use the most specific baseUri available
+			var baseUriToUse = art.baseUri || (artURI ? artURI.spec : null) || feed.baseUri;
+
+			if (baseUriToUse) {
+				console.debug("Processing lazy loading in getTextView with baseUri:", baseUriToUse);
+				processLazyLoading(p, baseUriToUse);
+			} else {
+				console.warn("Skipping lazy loading processing: No valid baseUri available");
+			}
+		} catch (e) {
+			console.error("Error processing lazy loading in getTextView:", e.message, e.stack);
+			// Continue with display even if lazy loading processing fails
+		}
+	}
+	*/
 
 	doc.body.appendChild(div);
 	doc.body.appendChild(p);
-
 }
 
 function makeMailto(title,link)
@@ -326,9 +347,11 @@ function doImgFile(i,req)
 
 function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 {
-	// Use the current document's principal for the DOMParser
-	const principal = doc.nodePrincipal; // Get the principal from the document
-	const parser = new DOMParser(); // Create a new DOMParser
+	// Add URL resolution before XML parsing
+	if (artURI)
+	{
+		body = fixRelativeLinks(body, artURI.spec);
+	}
 
 	// DOMParser is broken: Firefox bug#429785, using artURI is a fix
 	// added benefit: puts XML parse errors that are not suppressed
@@ -339,9 +362,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g, "");
 		body2 = emphsrch(body2);
 		if (tag == "p") body2 = linkify(body2, "x");
-
-		// Create the XML document with the principal
-		var xmlBody = parser.parseFromString(body2, "text/xml");
+		var xmlBody = new DOMParser(null,artURI,null).parseFromString(body2,"text/xml");
 		// Atom specification guarantees a single <div> element, now a <span>
 		var xBody = doc.importNode(xmlBody.childNodes[0], true);
 		p.appendChild(xBody);
@@ -355,12 +376,13 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		if (tag == "p") body2 = linkify(body2, "x");
 		try
 		{
-			var xmlBody = parser.parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>", "text/xml");
+			var xmlBody = new DOMParser(null,artURI,null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
 			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
 		}
 		catch (e)
 		{
+			console.error("XML parsing failed in getXhtmlBody:", e);
 			var p = doc.createElement(tag);
 			p.innerHTML = body2;
 		}
@@ -1702,9 +1724,25 @@ function entityDecode(aStr) {
 // Extended Descriptions (Filtered Web Pages)
 ////////////////////////////////////////////////////////////////
 
-function getXbody(art,feed)
+/**
+* Fetches and processes extended content for an article.
+* @param {Article} art - The article object to be extended with additional content.
+* @param {Feed} feed - The feed object containing filter configuration settings.
+* This function handles three main scenarios:
+* 1. Web filter case (XfilterType=3): Sets minimal "w" marker for web view rendering
+* 2. Image processing only: Processes images in article without fetching new content
+Side effects:
+- Sets art.Xtend to true
+- May set art.Xbody with processed content
+- May update UI via artTreeInvalidate()
+- May trigger articleSelected() if current article
+Error handling is delegated to processError() function for request failures.
+*/
+function getXbody(art, feed)
 {
 	art.Xtend = true;
+
+	// Handle web filter case
 	if (feed.XfilterType == 3 || (gOptions.defaultXfilterIsWeb && feed.XfilterType == -1))
 	{
 		art.Xbody = "w";
@@ -1714,25 +1752,61 @@ function getXbody(art,feed)
 			articleSelected();
 		return;
 	}
+
 	if (feed.XfilterImages && !feed.Xfilter)
+	{
 		postProcessImages(art.body, art, feed);
+	}
 	else
 	{
 		try
 		{
 			var xmlhttp = new XMLHttpRequest();
-			xmlhttp.open("GET", art.link, true);
+
+			// Properly resolve and encode the URI
+			var resolvedUri = art.link;
+			try
+			{
+				// Create an nsIURI object to handle URI resolution
+				var ios = Components.classes["@mozilla.org/network/io-service;1"]
+							.getService(Components.interfaces.nsIIOService);
+				var uri = ios.newURI(art.link, null, null);
+				resolvedUri = uri.spec; // Get the properly formatted URI
+
+				// Store the resolved URI for future reference
+				art.resolvedUri = resolvedUri;
+
+				// Also store the baseUri for lazy loading processing later
+				art.baseUri = resolvedUri;
+			}
+			catch(e)
+			{
+				// If URI creation fails, fall back to the original link
+				console.error("URI resolution failed in getXbody:", e.message, "for link:", art.link);
+				art.resolvedUri = art.link; // Still store the original link
+			}
+
+			xmlhttp.open("GET", resolvedUri, true);
+
+			// Handle MIME type settings
 			if (art.XfilterMimeType)
 				xmlhttp.overrideMimeType("text/html; charset=" + art.XfilterMimeType);
-			else if (feed.XfilterMimeType && feed.XfilterMimeType != AUTO_MIMETYPE && feed.XfilterMimeType != TEST_MIMETYPE)
+			else if (feed.XfilterMimeType &&
+					 feed.XfilterMimeType != AUTO_MIMETYPE &&
+					 feed.XfilterMimeType != TEST_MIMETYPE)
 				xmlhttp.overrideMimeType("text/html; charset=" + feed.XfilterMimeType);
 			else
 				xmlhttp.overrideMimeType("text/html");
+
 			xmlhttp.onload = function() { checkContentType(art, xmlhttp, feed); }
 			xmlhttp.onerror = function() { processError(art, xmlhttp, feed); }
 			xmlhttp.send(null);
 		}
-		catch(e) { processError(art, xmlhttp, feed); }
+		catch(e)
+		{
+			console.error("Error in getXbody:", e.message);
+			processError(art, xmlhttp, feed);
+		}
 	}
 }
 
@@ -1839,115 +1913,417 @@ function checkContentType(art,xmlhttp,feed)
 		processXbody(art,xmlhttp,feed);
 }
 
-function processXbody(art,xmlhttp,feed)
+function processXbody(art, xmlhttp, feed)
 {
 	const NF_SB = document.getElementById("newsfox-string-bundle");
 	var linkHTML = xmlhttp.responseText;
-	linkHTML = linkHTML.replace(/[\n|\r|\t]/g," ");
-	linkHTML = linkHTML.replace(/[\x00-\x1F]/g,"");
-	var linkDOM = getDomFromHtml(linkHTML);
-	var artText;
 
+	// Clean and normalize HTML content
+	linkHTML = linkHTML.replace(/[\n|\r|\t]/g, " ");
+	linkHTML = linkHTML.replace(/[\x00-\x1F]/g, "");
+
+	var linkDOM = getDomFromHtml(linkHTML);
+	if (!linkDOM)
+	{
+		console.error("Failed to create DOM from linkHTML.");
+		return doError(art, new Error("Invalid HTML content"));
+	}
+
+	// Get base URI for resolving relative URLs
+	var baseUri = art.resolvedUri || xmlhttp.channel.URI.spec;
+	var baseElements = linkDOM.getElementsByTagName("base");
+	for (var i = 0; i < baseElements.length; i++)
+	{
+		if (baseElements[i].getAttribute("href"))
+		{
+			try
+			{
+				// Store baseUri both on the function scope and on the feed for later use
+				var baseHref = baseElements[i].getAttribute("href");
+				baseUri = resolveUrl(baseHref, baseUri);
+
+				if (!baseUri) {
+					console.error("Failed to resolve base href:", baseHref, "against:", baseUri);
+					baseUri = art.resolvedUri || xmlhttp.channel.URI.spec;
+				}
+
+				// Store the resolved baseUri on the article for later use
+				art.baseUri = baseUri;
+
+				break;
+			}
+			catch (e)
+			{
+				console.error("Error resolving base href:", e.message);
+				baseUri = art.resolvedUri || xmlhttp.channel.URI.spec;
+			}
+		}
+	}
+
+	// Store the baseUri on the feed for use in image processing
+	feed.baseUri = baseUri;
+
+	// Filter out CSS and font files - remove them from DOM before processing
+	if (linkDOM.getElementsByTagName) {
+		try {
+			// Remove CSS link elements
+			var linkElements = linkDOM.getElementsByTagName("link");
+			for (var i = linkElements.length - 1; i >= 0; i--) {
+				var linkElement = linkElements[i];
+				var rel = linkElement.getAttribute("rel");
+				var href = linkElement.getAttribute("href");
+
+				if (rel && (rel.toLowerCase() === "stylesheet" || rel.toLowerCase() === "preload")) {
+					linkElement.parentNode.removeChild(linkElement);
+					// console.debug("Removed stylesheet link: " + href);
+				} else if (href) {
+					var lowerHref = href.toLowerCase();
+					if (lowerHref.endsWith(".css") ||
+						lowerHref.endsWith(".woff") ||
+						lowerHref.endsWith(".woff2") ||
+						lowerHref.endsWith(".ttf") ||
+						lowerHref.endsWith(".eot") ||
+						lowerHref.endsWith(".otf")) {
+						linkElement.parentNode.removeChild(linkElement);
+						console.debug("Removed font/CSS resource: " + href);
+					}
+				}
+			}
+
+			// Remove style elements
+			// var styleElements = linkDOM.getElementsByTagName("style");
+			// for (var i = styleElements.length - 1; i >= 0; i--) {
+			//     styleElements[i].parentNode.removeChild(styleElements[i]);
+			//     console.debug("Removed style element: " + href);
+			// }
+		} catch (e) {
+			console.error("Error removing CSS/font elements: ", e.message);
+			// Continue processing even if removal fails
+		}
+	}
+
+	// Process content based on filter type
 	var Xfilter = feed.Xfilter;
 	var filterType = feed.XfilterType;
 	if (Xfilter && filterType == -1) filterType = guessFilterType(Xfilter);
+
+	// Fix the undefined resolvedUri variable issue
+	var artText;
+
+	// We already have baseUri defined above - avoid redefinition
+	// This line was using resolvedUri which doesn't exist in this scope
+	try
+	{
+		// Use art.resolvedUri which was properly defined in getXbody
+		if (!baseUri)
+		{
+			baseUri = art.resolvedUri;
+		}
+
+		// Handle additional URI properties if this is an nsIURI object
+		if (baseUri && typeof baseUri === 'object' && baseUri.schemeIs)
+		{
+			baseUri = baseUri.schemeIs("file") ? baseUri : baseUri.specIgnoringRef;
+		}
+		else if (typeof baseUri === 'string')
+		{
+			// If it's already a string, we can use it as is
+			console.debug("Using string baseUri for URL resolution:", baseUri);
+		}
+	}
+	catch (e)
+	{
+		console.error("Error processing baseUri for URL resolution:", e.message);
+		// Fall back to what we already have if there's an error
+		baseUri = art.baseUri || art.resolvedUri || art.link || null;
+		console.debug("Falling back to baseUri:", baseUri);
+	}
+
+	/**
+	 * Helper function to process lazy loading with proper error handling
+	 * @param {string} content - The HTML content to process
+	 * @param {string} baseUri - The base URI for resolving URLs
+	 * @param {string} filterType - The type of filter being processed
+	 * @returns {string} - The processed content
+	 */
+	function processLazyLoadingWithErrorHandling(content, baseUri, filterType) {
+		if (!gOptions.processLazyLoading || !content || !baseUri) {
+			return content;
+		}
+
+		try {
+			var tempNode = document.createElement('div');
+			tempNode.textContent = content;
+			tempNode = processLazyLoading(tempNode, baseUri);
+			return tempNode.textContent;
+		} catch (lazyErr) {
+			console.error(`Error processing lazy loading after ${filterType} filter:`, lazyErr.message);
+			return content; // Return original content if processing fails
+		}
+	}
+
+	// Handle different filter types
 	if (filterType <= 0)  // none or RegExp
 	{
 		var re = DEFAULTREGEXP;
-		var error = false;
 		if (feed.Xfilter)
 		{
-			try { re = new RegExp(feed.Xfilter, "g"); }
-			catch(e) { error = true; }
-		}
-		if (error)
-		{
-			var badRE = NF_SB.getString('filterErrorBadRegExp');
-			alert(badRE + ": " + feed.Xfilter);
+			try
+			{
+				re = new RegExp(feed.Xfilter, "g");
+			}
+			catch(e)
+			{
+				var badRE = NF_SB.getString('filterErrorBadRegExp');
+				alert(badRE + ": " + feed.Xfilter);
+			}
 		}
 
-		var body = linkHTML.match(re);
-		if (body == null)
-		{
-			body = linkHTML.match(DEFAULTREGEXP);
-			if (body == null) body = [ linkHTML ];
+		// First resolve URLs in the entire HTML before applying RegExp filter
+		try {
+			if (baseUri) {
+				// Process URLs selectively based on content size
+				if (linkHTML.length > 500000) {
+					// For large content, defer URL resolution until after filtering
+					var body = linkHTML.match(re);
+					if (!body) {
+						body = linkHTML.match(DEFAULTREGEXP) || [linkHTML];
+					}
+					artText = body.join("");
+					// Only resolve URLs in the filtered content
+					artText = fixRelativeLinks(artText, baseUri);
+				} else {
+					// For smaller content, process everything
+					linkHTML = fixRelativeLinks(linkHTML, baseUri);
+					var body = linkHTML.match(re);
+					if (!body) {
+						body = linkHTML.match(DEFAULTREGEXP) || [linkHTML];
+					}
+					artText = body.join("");
+				}
+			}
+		} catch (resolveErr) {
+			// Error handling for URL resolution failure
+			console.error("Error resolving URLs for RegExp filter:", resolveErr.message);
+			// Continue with unresolved URLs rather than failing
+			var body = linkHTML.match(re);
+			if (!body) {
+				body = linkHTML.match(DEFAULTREGEXP) || [linkHTML];
+			}
+			artText = body.join("");
 		}
-		artText = body.join("");
 	}
 	else if (filterType == 1)  // JavaScript
 	{
 		try
 		{
+			// Create sandbox and set up environment
 			var newsfox_iframe = document.getElementById("buildContent");
 			var sandbox = Components.utils.Sandbox(newsfox_iframe.contentWindow);
+
+			// Optimize URL resolution for JavaScript filters
+			// Create URL resolver functions before processing
+			var resolveUrlHelper = `
+			// Cached URL resolution to avoid redundant processing
+			const _resolvedUrls = new Map();
+
+			function resolveUrl(url, base) {
+				// Skip data URLs and absolute URLs
+				if (!url || url.startsWith('data:') || /^(https?|ftp|file):/i.test(url)) {
+					return url;
+				}
+
+				// Check cache first
+				const cacheKey = url + '|' + base;
+				if (_resolvedUrls.has(cacheKey)) {
+					return _resolvedUrls.get(cacheKey);
+				}
+
+				// Resolve the URL
+				try {
+					const resolved = new URL(url, base).href;
+					_resolvedUrls.set(cacheKey, resolved);
+					return resolved;
+				} catch(e) {
+					console.error("Failed to resolve URL:", url, "with base:", base);
+					return url;
+				}
+			}
+
+			function resolveRelativeUrls(htmlContent) {
+				if (!htmlContent) return htmlContent;
+				return fixRelativeLinks(htmlContent, "${baseUri}");
+			}`;
+
+			// Skip pre-resolution of all URLs for large content
+			if (linkHTML.length > 200000) {
+				console.debug("Large content detected, deferring URL resolution to JavaScript filter");
+			} else {
+				// For smaller content, resolve URLs before processing
+				if (baseUri) {
+					linkHTML = fixRelativeLinks(linkHTML, baseUri);
+				}
+			}
+
+			// Set up sandbox with the HTML and helper functions
 			sandbox.linkHTML = Components.utils.cloneInto(linkHTML, sandbox);
 			sandbox.win = Components.utils.cloneInto(newsfox_iframe.contentWindow, sandbox, {cloneFunctions: true, wrapReflectors: true});
 			sandbox.doc = Components.utils.cloneInto(newsfox_iframe.contentDocument, sandbox, {cloneFunctions: true, wrapReflectors: true});
 
+			// Include the helper in the sandbox execution
 			var xfilterGEBC = 'var getElementsByClass = function (searchClass, tag, node) { var classElements = new Array(); var els = node.getElementsByTagName(tag); var pattern = new RegExp("(^|\\\\s)" + searchClass + "(\\\\s|$)"); for (i=0, j=0; i<els.length; i++) if (pattern.test(els[i].className)) classElements[j++] = els[i]; return classElements; }; ';
-//		var getElementsByClass =
-//				function (searchClass, tag, node)
-//				{
-//					var classElements = new Array();
-//					var els = node.getElementsByTagName(tag);
-//
-//					var pattern = new RegExp("(^|\\\\s)" + searchClass + "(\\\\s|$)");
-//					for (i=0, j=0; i<els.length; i++)
-//						if (pattern.test(els[i].className)) classElements[j++] = els[i];
-//					return classElements;
-//				}
-
 			var xfilterLINKDOM = ' var iframeEls = doc.getElementsByTagName("iframe"); var tmp; for (var i=0; i< iframeEls.length; i++) if (iframeEls[i].id == "hiddenDOMiframe") tmp = i; linkDOM = iframeEls[tmp].contentDocument; ';
-//    var iframeEls = doc.getElementsByTagName("iframe");
-//    var tmp; for (var i=0; i< iframeEls.length; i++)
-//      if (iframeEls[i].id == "hiddenDOMiframe") tmp = i;
-//    linkDOM = iframeEls[tmp].contentDocument;
+			var xfilterPre = xfilterGEBC + xfilterLINKDOM + resolveUrlHelper;
 
-			var xfilterPre = xfilterGEBC + xfilterLINKDOM;
+			// Fix links in linkDOM before execution
+			if (newsfox_iframe && newsfox_iframe.contentDocument) {
+				fixLinks(newsfox_iframe.contentDocument, baseUri, "html");
+			}
+
 			sandbox.cxf = Components.utils.cloneInto(xfilterPre + feed.Xfilter, sandbox);
 			var tmp = Components.utils.evalInSandbox(sandbox.cxf, sandbox);
 
 			if (typeof tmp == "string")
+			{
 				artText = tmp;
+			}
 			else
 			{
 				var badEval = NF_SB.getString('filterErrorBadJavaScript');
-				throw badEval;
+				throw new Error(badEval);
 			}
 		}
 		catch(e)
-			{
-			console.error("Error processing Xbody: " + e.message);
+		{
+			console.error("processXbody: JavaScript filter error: ", e.message, { feed: feed.getDisplayName() });
 			return doError(art, e);
-			}
+		}
 	}
 	else  // filterType == 2, XPath
 	{
 		try
 		{
+			// Optimize URL resolution for XPath by implementing selective fixing
+			// Only fix links in elements that will be processed by XPath
+			if (linkDOM) {
+				// Analyze XPath to determine what elements will be selected
+				const xpathTargets = analyzeXPathSelector(Xfilter);
+
+				// Create a more efficient fixLinks function that only processes
+				// elements that match the XPath selectors
+				if (xpathTargets.length > 0 && baseUri) {
+					// Only fix links in elements that will be selected
+					for (const selector of xpathTargets) {
+						try {
+							const targetNodes = linkDOM.querySelectorAll(selector);
+							for (const node of targetNodes) {
+								fixLinksInElement(node, baseUri);
+							}
+						} catch (e) {
+							// If querySelector fails, fall back to fixing all links
+							console.debug("Selective link fixing failed, falling back to full DOM: " + e.message);
+							fixLinks(linkDOM, baseUri, "html");
+							break;
+						}
+					}
+				}
+				else
+				{
+					// If we can't determine targets, fix all links
+					fixLinks(linkDOM, baseUri, "html");
+				}
+			}
+
+			// Existing XPath evaluation code
 			var xmlSer = new XMLSerializer();
-		// xmlSer uses capitals in tags e.g. <DIV>, need to make sure
-		// artText is not XHTML or <DIV> tags will be ignored
+			// xmlSer uses capitals in tags e.g. <DIV>, need to make sure
+			// artText is not XHTML or <DIV> tags will be ignored
 			artText = "<p>";
-			var result = linkDOM.evaluate(Xfilter, linkDOM, null, 
+			var result = linkDOM.evaluate(Xfilter, linkDOM, null,
 											XPathResult.ORDERED_NODE_SNAPSHOT_TYPE, null);
-			for (var j=0; j<result.snapshotLength; j++)
-				artText += xmlSer.serializeToString(result.snapshotItem(j));
+
+			// Process nodes together
+			for (var j = 0; j < result.snapshotLength; j++)
+			{
+				var node = result.snapshotItem(j);
+				artText += xmlSer.serializeToString(node);
+			}
 		}
 		catch(e)
-			{
-				return doError(art, e);
-			}
+		{
+			console.error("processXbody: XPath filter error: ", e.message, { feed: feed.getDisplayName() });
+			return doError(art, e);
+		}
 	}
 
-	var base = xmlhttp.channel.URI.spec;
-	var baseT = linkDOM.getElementsByTagName("base");
-	for (var i=0; i<baseT.length; i++)
-		if (baseT[i].getAttribute("href") != null) base = baseT[i].href;
-	if (!gOptions.openInViewPane) artText = makeTarget_Blank(artText);
-	var baseuri = adjustBase(null,base);
-	artText = fixRelativeLinks(artText,baseuri);
+	// Filter out CSS and font related elements from artText using regex
+	try {
+		// Remove <link> elements for stylesheets and fonts
+		artText = artText.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, "");
+		artText = artText.replace(/<link[^>]*rel\s*=\s*["']preload["'][^>]*>/gi, "");
+		artText = artText.replace(/<link[^>]*href\s*=\s*["'][^"']*\.css["'][^>]*>/gi, "");
+		artText = artText.replace(/<link[^>]*href\s*=\s*["'][^"']*\.(woff|woff2|ttf|eot|otf)["'][^>]*>/gi, "");
+
+		// Remove <style> elements
+		artText = artText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+	}
+	catch (e)
+	{
+		console.error("Error filtering CSS/font elements from artText:", e.message);
+	}
+
+	// Process lazy loading before second pass URL resolution
+	// This ensures we handle all lazy-loaded content in one place
+	try
+	{
+		if (gOptions.processLazyLoading && baseUri && artText) {
+			// Check if content actually needs lazy loading processing
+			const needsLazyLoading = /\b(data-src|data-srcset|lazy-src|data-lazy|data-original|loading=["'](lazy|auto)["'])\s*=/i.test(artText);
+
+			if (needsLazyLoading) {
+				console.debug("Processing lazy loading for filter type:", filterType);
+				artText = processLazyLoadingWithErrorHandling(artText, baseUri, `filter-${filterType}`);
+			} else {
+				console.debug("No lazy loading attributes found, skipping processing");
+			}
+		}
+	}
+	catch (e)
+	{
+		console.error("Error in lazy loading processing:", e.message);
+		// Continue processing even if lazy loading failed
+	}
+
+	// Second pass URL resolution - ensure any URLs that might have been added
+	// or modified by the filter or lazy loading are resolved
+	try
+	{
+		if (baseUri && artText)
+		{
+			const needsUrlResolution = /\s(src|href)\s*=\s*['"](?!data:)(?!https?:)(?!ftp:)(?!file:)[^'"]+['"]/i.test(artText);
+
+			if (needsUrlResolution)
+			{
+				const safeBaseUri = sanitizeUrlForResolution(baseUri);
+				artText = fixRelativeLinks(artText, safeBaseUri);
+			}
+		}
+	}
+	catch (e)
+	{
+		console.error("Error in second-pass resolving of relative links:", e.message);
+	}
+
+	// Post-processing
+	if (!gOptions.openInViewPane)
+	{
+		artText = makeTarget_Blank(artText);
+	}
+
+	// Process images in artText
 	postProcessImages(artText, art, feed);
+
+	return artText;
 }
 
 function postProcessImages(artText, art, feed)
@@ -1961,53 +2337,103 @@ function postProcessImages(artText, art, feed)
 	saveFeed(feed);
 }
 
-function getImages(artText,art,feed)
+function getImages(artText, art, feed)
 {
-	var imgs = artText.match(/<[Ii][Mm][Gg].*?[Ss][Rr][Cc]\s*=\s*['"]http.*?>/g);
+	// Match both absolute and relative image sources
+	var imgs = artText.match(/<[Ii][Mm][Gg].*?[Ss][Rr][Cc]\s*=\s*['"]([^'"]+)['"]/g);
 	if (imgs)
 	{
 		art.imagesToGet = imgs.length;
 		artTreeInvalidate();
-		for (var i=0; i<imgs.length; i++)
+		for (var i = 0; i < imgs.length; i++)
 		{
-			var url = imgs[i].match(/[Ss][Rr][Cc]\s*=\s*(['"])http.*?\1/)[0]
-										.replace(/[Ss][Rr][Cc]\s*=\s*['"]/,"").replace(/['"]$/,"");
-			getDataForImage(url,art,artText,imgs[i],feed);
+			// Extract the URL from the img tag
+			var urlMatch = imgs[i].match(/[Ss][Rr][Cc]\s*=\s*['"]([^'"]+)['"]/);
+			if (urlMatch)
+			{
+				var url = urlMatch[1];
+
+				// Ensure the URL is valid before proceeding
+				if (url)
+				{
+					getDataForImage(url, art, artText, imgs[i], feed);
+				}
+				else
+				{
+					console.warn("Invalid URL extracted from img tag:", url);
+				}
+			}
 		}
 	}
 }
 
-function getDataForImage(url,art,artText,imgText,feed)
+function getDataForImage(url, art, artText, imgText, feed)
 {
 	try
 	{
+		// Properly resolve the URL
+		url = resolveUrl(url, art.link);
+		if (!url)
+		{
+			console.warn("Invalid URL after resolution:", url);
+			art.imagesToGet--;
+			return;
+		}
+
 		var req = new XMLHttpRequest();
 		req.open('GET', url, true);
-	// trick by Marcus Granado, next line and toBinStr()
-	// http://mgran.blogspot.com/2006/08/downloading-binary-streams-with.html
+		// trick by Marcus Granado, next line and toBinStr()
+		// http://mgran.blogspot.com/2006/08/downloading-binary-streams-with.html
 		req.overrideMimeType('text/plain; charset=x-user-defined');
 		req.onload = function()
-			{ return processImage(req,url,art,artText,imgText,feed); }
+		{
+			return processImage(req, url, art, artText, imgText, feed);
+		}
 		req.onreadystatechange = function()
-			{ if (art.Xtend == false) { art.imagesToGet--; req.abort(); } }
+		{
+			if (art.Xtend == false)
+			{
+				art.imagesToGet--;
+				req.abort();
+			}
+		}
 		req.send(null);
 	}
-	catch(e) { art.imagesToGet--; req.abort(); }
+	catch(e)
+	{
+		art.imagesToGet--;
+		if (req) req.abort();
+	}
 }
 
-function processImage(req,url,art,artText,imgText,feed)
+function processImage(req, url, art, artText, imgText, feed)
 {
+	// Check if the request was successful
+	if (req.status !== 200)
+	{
+		console.error("Failed to load image:", url, "Status:", req.status);
+		art.imagesToGet--;
+		return; // Exit if the request was not successful
+	}
+
 	var dataType = req.getResponseHeader('content-type');
-	if (dataType.substring(0,5) == "image")
+	if (dataType && dataType.substring(0, 5) == "image")
 	{
 		var dataURL = "data:" + dataType + ";base64,";
 		var binText = toBinStr(req.responseText);
 		dataURL += btoa(binText);
 
-		var newimgText = imgText.replace(url,dataURL);
-		var newartText = art.Xbody.replace(imgText,newimgText);
+		// Extract the original URL pattern from imgText to ensure correct replacement
+		var srcPattern = imgText.match(/[Ss][Rr][Cc]\s*=\s*['"]([^'"]+)['"]/)[1];
+		var newimgText = imgText.replace(srcPattern, dataURL);
+		var newartText = art.Xbody.replace(imgText, newimgText);
 		art.Xbody = newartText;
 	}
+	else
+	{
+		console.warn("Response is not an image:", url, "Content-Type:", dataType);
+	}
+
 	art.imagesToGet--;
 	if (art.imagesToGet == 0)
 	{
@@ -2037,6 +2463,94 @@ function getDomFromHtml(siteHTML)
 	var siteDOM = iframe.contentDocument;
 	// leave the iframe since FF35 since we need access to the DOM from newsfox_iframe
 	// delete the iframe as we don't need it any more
-//	doc.body.removeChild(iframe);
+	// doc.body.removeChild(iframe);
 	return siteDOM;
+}
+
+/**
+ * Analyzes an XPath selector to determine which elements it targets
+ * Returns an array of CSS selectors that approximately match the XPath
+ * @param {string} xpath - The XPath selector to analyze
+ * @return {Array<string>} - Array of CSS selectors
+ */
+function analyzeXPathSelector(xpath) {
+	const selectors = [];
+
+	// Extract element names from XPath expressions
+	const elementMatches = xpath.match(/\/\/([a-z]+)|\/@([a-z]+)/gi);
+	if (elementMatches) {
+		elementMatches.forEach(match => {
+			const element = match.replace(/^\/\/|\/\@/i, '');
+			if (element && !element.includes('()')) {
+				selectors.push(element);
+			}
+		});
+	}
+
+	// Handle common XPath patterns like //div[@class='content']
+	const classMatches = xpath.match(/\/\/([a-z]+)\[@class=['"]([^'"]+)['"]\]/gi);
+	if (classMatches) {
+		classMatches.forEach(match => {
+			const parts = match.match(/\/\/([a-z]+)\[@class=['"]([^'"]+)['"]\]/i);
+			if (parts && parts.length >= 3) {
+				selectors.push(`${parts[1]}.${parts[2]}`);
+			}
+		});
+	}
+
+	// Handle ID selectors: //div[@id='content']
+	const idMatches = xpath.match(/\/\/([a-z]+)\[@id=['"]([^'"]+)['"]\]/gi);
+	if (idMatches) {
+		idMatches.forEach(match => {
+			const parts = match.match(/\/\/([a-z]+)\[@id=['"]([^'"]+)['"]\]/i);
+			if (parts && parts.length >= 3) {
+				selectors.push(`${parts[1]}#${parts[2]}`);
+			}
+		});
+	}
+
+	return selectors;
+}
+
+/**
+ * Fixes links only within a specific element and its children
+ * @param {Element} element - The element to process
+ * @param {string} baseUri - The base URI for resolving relative URLs
+ */
+function fixLinksInElement(element, baseUri) {
+	// Fix href attributes
+	const linkElements = element.querySelectorAll('a, link, area');
+	for (const link of linkElements) {
+		if (link.hasAttribute('href')) {
+			const href = link.getAttribute('href');
+			if (href && !href.startsWith('data:') && !href.match(/^(https?|ftp):/i)) {
+				try {
+					const resolved = resolveUrl(href, baseUri);
+					if (resolved) {
+						link.setAttribute('href', resolved);
+					}
+				} catch(e) {
+					console.error("Error resolving href:", e.message);
+				}
+			}
+		}
+	}
+
+	// Fix src attributes
+	const mediaElements = element.querySelectorAll('img, video, audio, source, iframe, script');
+	for (const media of mediaElements) {
+		if (media.hasAttribute('src')) {
+			const src = media.getAttribute('src');
+			if (src && !src.startsWith('data:') && !src.match(/^(https?|ftp):/i)) {
+				try {
+					const resolved = resolveUrl(src, baseUri);
+					if (resolved) {
+						media.setAttribute('src', resolved);
+					}
+				} catch(e) {
+					console.error("Error resolving src:", e.message);
+				}
+			}
+		}
+	}
 }

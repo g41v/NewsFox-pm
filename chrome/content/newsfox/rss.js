@@ -798,23 +798,25 @@ function getFavIcon(favicon,file)
 {
 	try
 	{
-		var IOService = Components.classes["@mozilla.org/network/io-service;1"].getService(Components.interfaces.nsIIOService);
+		var IOService = Components.classes["@mozilla.org/network/io-service;1"]
+			.getService(Components.interfaces.nsIIOService);
 
 		// Create a new channel for the favicon URL
-		var IOchannel = IOService.newChannel(favicon,null,null, null, Services.scriptSecurityManager.getSystemPrincipal(), null, Ci.nsILoadInfo.SEC_NORMAL, Ci.nsIContentPolicy.TYPE_IMAGE);
+		var IOchannel = IOService.newChannel(favicon, null, null);
 
 		// Create a downloader listener to handle the download
-		var nfListener = Components.classes["@mozilla.org/network/downloader;1"].createInstance(Components.interfaces.nsIDownloader);
+		var nfListener = Components.classes["@mozilla.org/network/downloader;1"]
+			.createInstance(Components.interfaces.nsIDownloader);
 
 		// Initialize the listener with the observer and the target file
-		nfListener.init(nfObserver,file);
+		nfListener.init(nfObserver, file);
 
 		// Start the asynchronous download
-		IOchannel.asyncOpen(nfListener,null);
+		IOchannel.asyncOpen(nfListener, null);
 	}
 	catch(e)
 	{
-	console.error("Error downloading favicon from " + favicon + " to " + file.path + ":", { e, favicon, file });
+		console.error("NewsFox: Error downloading favicon from " + favicon + " error details: " + e);
 	}
 }
 
@@ -824,11 +826,13 @@ function isImg(file)
 	if (!file.exists() || file.fileSize == 0) return false;
 
 	// Create a file input stream to read the file
-	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"].createInstance(Components.interfaces.nsIFileInputStream);
+	var inputStream = Components.classes["@mozilla.org/network/file-input-stream;1"]
+		.createInstance(Components.interfaces.nsIFileInputStream);
 	inputStream.init(file, -1, -1, null);
 
 	// Create a scriptable input stream to read the data
-	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"].createInstance(Components.interfaces.nsIScriptableInputStream);
+	var scInputStream = Components.classes["@mozilla.org/scriptableinputstream;1"]
+		.createInstance(Components.interfaces.nsIScriptableInputStream);
 	scInputStream.init(inputStream);
 
 	// Read the entire content of the file
@@ -847,13 +851,13 @@ var nfObserver =
 	{
 		try 
 		{
-			var aleafName = aresult.leafName; // Get the name of the downloaded file
-			if (!aleafName) 
+			if (!aresult || !aresult.leafName) 
 			{
 				console.error("Downloaded file has no name.");
 				return;
 			}
 
+			var aleafName = aresult.leafName; // Get the name of the downloaded file
 			var auid = aleafName;
 
 			// Check if the filename has an extension
@@ -867,12 +871,12 @@ var nfObserver =
 			auid = auid.trim();
 
 			var i = gFmodel.size(); // Get the size of the feed model
-			if (i === 0) return; // If there are no items, exit
+			if (i == 0) return; // If there are no items, exit
 
 			// Loop through the feed model to find the matching UID
 			for (let index = i - 1; index >= 0; index--) 
 			{
-				if (gFmodel.get(index).uid === auid) 
+				if (gFmodel.get(index).uid == auid) 
 				{
 					// If the downloaded file is an image, update the feed model's icon
 					if (isImg(aresult)) 
@@ -885,7 +889,7 @@ var nfObserver =
 		} 
 		catch (e) 
 		{
-			console.error("Error in onDownloadComplete:", e);
+			console.error("Error in onDownloadComplete:", { e });
 		}
 	}
 }
@@ -997,7 +1001,7 @@ function repairIt(xmlhttp)
 	}
 
 	// Check for parser errors
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
 	{
 		// Remove most common non-XML characters
 		httpText = httpText.replace(/[\n|\r|\t]/g, " ").replace(/[\x00-\x1F]/g, "");
@@ -1007,7 +1011,7 @@ function repairIt(xmlhttp)
 	// Handle additional parser errors
 	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
 	{
-		// Replace & with &amp; for valid XML (from Nils Maier, Sage bug#15473)
+		// from Nils Maier, Sage bug#15473, just replace & with &amp;
 		httpText = httpText.replace(/&(?!amp;|quot;|lt;|gt;)/gm, '&amp;');
 		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
@@ -1016,11 +1020,8 @@ function repairIt(xmlhttp)
 	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
 	{
 		var tmp = httpText.indexOf("<?xml");
-		if (tmp !== -1) 
-		{
-			httpText = httpText.substring(tmp);
-			xml2 = domParser.parseFromString(httpText, "application/xml");
-		}
+		httpText = httpText.substring(tmp);
+		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
 
 	return xml2; // Return the parsed XML or null if parsing failed
