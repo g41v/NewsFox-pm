@@ -34,6 +34,7 @@
 <!ENTITY spam "&quot;Érdekes&quot; szűrő engedélyezése">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "Általános">
 <!ENTITY feedTab "Hírfolyam/Cikk">
 <!ENTITY generalTab "Általános">

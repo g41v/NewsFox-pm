@@ -333,7 +333,7 @@ function checkFeed(xmlhttp, feedsToCheck, urlFeed, urlSent, httpRenewTimeout)
 			else
 				article = feed.add(item,1);  // read, unflagged
 
-			if (feed.XfilterNew && article) getXbody(article, feed);
+			if (feed.XfilterNew && article) getXbodyQueue(article, feed);
 		}
 
 		if (gArtsToAddSpam.length > 0) setTimeout(doAddSpam, 50);

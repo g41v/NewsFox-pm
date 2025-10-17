@@ -1752,6 +1752,26 @@ function entityDecode(aStr) {
 // Extended Descriptions (Filtered Web Pages)
 ////////////////////////////////////////////////////////////////
 
+// Queue to hold xbody requests
+let xbodyQueue = [];
+let isProcessingQueue = false;
+// Map to track hosts being processed
+let hostsInProcess = new Map();
+
+// Function to handle the xbody queue and call getXbody
+function getXbodyQueue(art, feed)
+{
+	// Add the request to the queue
+	xbodyQueue.push({ art, feed });
+
+	// If not already processing, start processing the queue
+	if (!isProcessingQueue)
+	{
+		isProcessingQueue = true; // Set flag to indicate processing
+		getXbody(); // Start processing the queue
+	}
+}
+
 /**
 * Fetches and processes extended content for an article.
 * @param {Article} art - The article object to be extended with additional content.
@@ -1766,88 +1786,169 @@ Side effects:
 - May trigger articleSelected() if current article
 Error handling is delegated to processError() function for request failures.
 */
-function getXbody(art, feed)
+function getXbody()
 {
+	if (xbodyQueue.length === 0)
+	{
+		isProcessingQueue = false; // No more requests to process
+		hostsInProcess.clear(); // Clear the hosts tracking
+		return;
+	}
+
+	// Find the next request that doesn't have its host already being processed
+	let nextItemIndex = -1;
+	for (let i = 0; i < xbodyQueue.length; i++)
+	{
+		const item = xbodyQueue[i];
+		const art = item.art;
+		let host = "";
+
+		// Try to extract the host from the article link
+		try
+		{
+			// Parse the URL to extract host
+			let url = new URL(art.link);
+			host = url.hostname;
+		}
+		catch(e)
+		{
+			console.error("Error extracting host from URL: " + art.link, e.message);
+			host = art.link; // Use the full URL as fallback
+		}
+
+		// If this host is not currently being processed, select this item
+		if (!hostsInProcess.has(host))
+		{
+			nextItemIndex = i;
+			hostsInProcess.set(host, true);
+			break;
+		}
+	}
+
+	// If no suitable item was found, wait for currently processing hosts to complete
+	if (nextItemIndex === -1)
+	{
+		// We'll return and wait for the next call when a host completes
+		return;
+	}
+
+	// Process the selected item
+	const { art, feed } = xbodyQueue.splice(nextItemIndex, 1)[0];
 	art.Xtend = true;
 
-	// Handle web filter case
+	// Store the host for cleanup when processing completes
+	let currentHost = "";
+	try
+	{
+		let url = new URL(art.link);
+		currentHost = url.hostname;
+	}
+	catch(e)
+	{
+		console.error("Error extracting host in processing:", e.message);
+		currentHost = art.link;
+	}
+
+	// Special case handling without fetching
 	if (feed.XfilterType == 3 || (gOptions.defaultXfilterIsWeb && feed.XfilterType == -1))
 	{
 		art.Xbody = "w";
 		var arttree = artTreeInvalidate();
 		var index = arttree.currentIndex;
 		if (index > -1 && gCollect.get(index).id == art.id)
+		{
 			articleSelected();
-		return;
+		}
+
+		hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
+		setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after configurable delay
+		return Promise.resolve(); // Resolve immediately
 	}
 
+	// Image processing only case
 	if (feed.XfilterImages && !feed.Xfilter)
 	{
 		postProcessImages(art.body, art, feed);
+		artTreeInvalidate(); // Update the UI to reflect that images have been processed
+
+		hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
+		setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after configurable delay
+		return Promise.resolve(); // Resolve after processing images
 	}
 	else
 	{
-		try
+		// Full content fetching case
+		return new Promise((resolve, reject) =>
 		{
-			var xmlhttp = new XMLHttpRequest();
-
-			// Properly resolve and encode the URI
-			var resolvedUri;
 			try
 			{
-				// If we need to create a proper nsIURI object, use the Components API
-				if (typeof Components !== 'undefined' && Components.classes)
+				var xmlhttp = new XMLHttpRequest();
+				xmlhttp.open("GET", art.link, true);
+
+				// Handle MIME type settings
+				if (art.XfilterMimeType)
 				{
-					var ios = Components.classes["@mozilla.org/network/io-service;1"]
-								.getService(Components.interfaces.nsIIOService);
-					var uri = ios.newURI(art.link, null, null);
-					resolvedUri = uri.spec; // Get the properly formatted URI
+					xmlhttp.overrideMimeType("text/html; charset=" + art.XfilterMimeType);
+				}
+				else if (feed.XfilterMimeType &&
+						 feed.XfilterMimeType != AUTO_MIMETYPE &&
+						 feed.XfilterMimeType != TEST_MIMETYPE)
+				{
+					xmlhttp.overrideMimeType("text/html; charset=" + feed.XfilterMimeType);
 				}
 				else
 				{
-					// Simple fallback - already a string
-					resolvedUri = art.link;
+					xmlhttp.overrideMimeType("text/html");
 				}
+
+				// Store a reference to the host for cleanup in callbacks
+				const hostRef = currentHost;
+
+				xmlhttp.onload = function()
+				{
+					checkContentType(art, xmlhttp, feed);
+					artTreeInvalidate(); // Update the UI to reflect the successful content fetch
+					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
+					setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
+					resolve(); // Resolve the promise
+				};
+
+				xmlhttp.onerror = function()
+				{
+					processError(art, xmlhttp, feed);
+					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
+					setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
+					reject(new Error("Request failed for host: " + hostRef)); // Reject the promise
+				};
+
+				xmlhttp.send(null);
 			}
 			catch(e)
 			{
-				console.error("Error creating URI from art.link:", e.message);
-				resolvedUri = art.link; // Fallback to original link
+				console.error("Error in getXbody:", e.message);
+				processError(art, xmlhttp, feed);
+				hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
+				setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
+				reject(new Error("Error in getXbody: " + e.message)); // Reject the promise
 			}
-
-			xmlhttp.open("GET", resolvedUri, true);
-
-			// Handle MIME type settings
-			if (art.XfilterMimeType)
-				xmlhttp.overrideMimeType("text/html; charset=" + art.XfilterMimeType);
-			else if (feed.XfilterMimeType &&
-					 feed.XfilterMimeType != AUTO_MIMETYPE &&
-					 feed.XfilterMimeType != TEST_MIMETYPE)
-				xmlhttp.overrideMimeType("text/html; charset=" + feed.XfilterMimeType);
-			else
-				xmlhttp.overrideMimeType("text/html");
-
-			xmlhttp.onload = function() { checkContentType(art, xmlhttp, feed); } // Call checkContentType to validate the response
-			xmlhttp.onerror = function() { processError(art, xmlhttp, feed); }
-			xmlhttp.send(null);
-		}
-		catch(e)
-		{
-			console.error("Error in getXbody:", e.message);
-			processError(art, xmlhttp, feed);
-		}
+		});
 	}
 }
 
-function processError(art,xmlhttp,feed)
+function processError(art, xmlhttp, feed)
 {
 	xmlhttp.abort();
 	const NF_SB = document.getElementById("newsfox-string-bundle");
 	var statusError = NF_SB.getString('remedy_server_error');
-	doError(art, statusError + ": " + xmlhttp.status);
+	// Instead of throwing an error, just log it and mark the article
+	console.error(statusError + ": " + xmlhttp.status);
+	art.Xtend = false; // Mark as not extended
+	art.XtendError = true; // Indicate an error occurred
+	artTreeInvalidate(); // Update the UI
+	// No need to throw an error, just return
 }
 
-function doError(art,msg)
+function doError(art, msg)
 {
 	art.Xtend = false;
 	art.XtendError = true;
@@ -1929,17 +2030,41 @@ function fixContentType(art,xmlhttp,feed)
 	return false;
 }
 
-function checkContentType(art,xmlhttp,feed)
+function checkContentType(art, xmlhttp, feed)
 {
-	if (xmlhttp.status != 200) processError(art,xmlhttp,feed);
+	if (xmlhttp.status != 200) processError(art, xmlhttp, feed);
 	var mimeType = feed.XfilterMimeType;
 	var changed = false;
 	if (!art.XfilterMimeType && ((mimeType == AUTO_MIMETYPE) || (mimeType == TEST_MIMETYPE)))
-		changed = fixContentType(art,xmlhttp,feed);
+		changed = fixContentType(art, xmlhttp, feed);
 	if (changed)
-		getXbody(art,feed);
+	{
+		// Extract host for tracking in getXbodyQueue
+		let host = "";
+		try
+		{
+			if (typeof Components !== 'undefined' && Components.classes)
+			{
+				let ios = Components.classes["@mozilla.org/network/io-service;1"]
+							.getService(Components.interfaces.nsIIOService);
+				let uri = ios.newURI(art.link, null, null);
+				host = uri.host;
+				// Remove this host from tracking before recalling getXbodyQueue
+				if (hostsInProcess && typeof hostsInProcess.delete === 'function')
+				{
+					hostsInProcess.delete(host);
+				}
+			}
+		}
+		catch(e)
+		{
+			console.error("Error extracting host in checkContentType:", e.message);
+		}
+
+		getXbodyQueue(art, feed);
+	}
 	else
-		processXbody(art,xmlhttp,feed);
+		processXbody(art, xmlhttp, feed);
 }
 
 function processXbody(art, xmlhttp, feed)

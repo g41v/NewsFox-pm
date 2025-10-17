@@ -389,6 +389,10 @@
 				<checkbox id="pOspam" label="&spam;"/>
 				<checkbox id="pOtransformImageURLs" label="&transformImageURLs;"/>
 				<checkbox id="pOprocessLazyLoading" label="&processLazyLoading;"/>
+				<hbox align="left">
+				<label value="&getXbodyDelay;" control="pOgetXbodyDelay"/>
+				<textbox id="pOgetXbodyDelay" maxlength="5" maxwidth="55"/>
+				</hbox>
 				<checkbox id="pOsync" label="&updateTimeToBookmark;"/>
 				<hbox align="center">
 					<label value="&buttonText;" control="radioStatusBarText"/>

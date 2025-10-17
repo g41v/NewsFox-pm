@@ -34,6 +34,7 @@
 <!ENTITY spam "啟用興趣篩選">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "全域設定">
 <!ENTITY feedTab "Feed/文章">
 <!ENTITY generalTab "一般">

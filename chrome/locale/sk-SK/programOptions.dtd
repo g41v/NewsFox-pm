@@ -34,6 +34,7 @@
 <!ENTITY spam "Zapnúť filter">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "Všeobecné">
 <!ENTITY feedTab "Kanál/Články">
 <!ENTITY generalTab "Všeobecné">

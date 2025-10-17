@@ -34,6 +34,7 @@
 <!ENTITY spam "関心フィルタを有効にする">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "全体">
 <!ENTITY feedTab "フィード/記事">
 <!ENTITY generalTab "一般">

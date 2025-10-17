@@ -34,6 +34,7 @@
 <!ENTITY spam "Activer le filtre d'intérêt">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Flux/Articles">
 <!ENTITY generalTab "Général">

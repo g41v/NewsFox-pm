@@ -100,6 +100,7 @@ function init()
 	document.getElementById("pOspam").checked = gOpt.spam;
 	document.getElementById("pOtransformImageURLs").checked = gOpt.transformImageURLs;
 	document.getElementById("pOprocessLazyLoading").checked = gOpt.processLazyLoading;
+	document.getElementById("pOgetXbodyDelay").value = gOpt.getXbodyDelay/10;  // Set the getXbody delay value in the input field
 	var pOsync = document.getElementById("pOsync");
 	pOsync.checked = gOpt.bookmarkSync;
 	NFsetUserAgent();
@@ -171,6 +172,12 @@ function doAccept()
 	gOpt.spam = document.getElementById("pOspam").checked;
 	gOpt.transformImageURLs = document.getElementById("pOtransformImageURLs").checked;
 	gOpt.processLazyLoading = document.getElementById("pOprocessLazyLoading").checked;
+
+	// Read the getXbody delay value from the input field
+	val = parseInt(10 * document.getElementById("pOgetXbodyDelay").value); // Convert to integer
+	if ( val < 0 || isNaN(val)) val = 10;
+	gOpt.getXbodyDelay = val
+
 	gOpt.bookmarkSync = document.getElementById("pOsync").checked;
 
 	var lenToCheck = Math.min(gOpt.keyword.length,5)-1;

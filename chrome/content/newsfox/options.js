@@ -177,6 +177,7 @@ function AppOptions()
 		this.fixyoutube1 = NFgetPref("advanced.fixyoutube1", "bool", true);
 		this.transformImageURLs = NFgetPref("advanced.transformImageURLs", "bool", true);
 		this.processLazyLoading = NFgetPref("advanced.processLazyLoading", "bool", true);
+		this.getXbodyDelay = 10 * NFgetPref("advanced.getXbodyDelay", "int", 10);
 		this.fixMailto = NFgetPref("advanced.fixMailto", "bool", true);
 		this.defaultXfilterIsWeb = NFgetPref("advanced.defaultXfilterIsWeb", "bool", false);
 		this.linuxNoDragDrop = NFgetPref("advanced.linuxNoDragAndDrop", "bool", true);
@@ -291,6 +292,7 @@ function AppOptions()
 			NFsetPref("advanced.fixyoutube1", "bool", this.fixyoutube1);
 			NFsetPref("advanced.transformImageURLs", "bool", this.transformImageURLs);
 			NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
+			NFsetPref("advanced.getXbodyDelay", "int", this.getXbodyDelay/100);
 			NFsetPref("advanced.fixMailto", "bool", this.fixMailto);
 			NFsetPref("advanced.defaultXfilterIsWeb", "bool", this.defaultXfilterIsWeb);
 			NFsetPref("advanced.linuxNoDragAndDrop", "bool", this.linuxNoDragDrop);

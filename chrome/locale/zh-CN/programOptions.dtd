@@ -34,6 +34,7 @@
 <!ENTITY spam "启用收藏夹过滤器">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "全局">
 <!ENTITY feedTab "源/文章">
 <!ENTITY generalTab "常规">

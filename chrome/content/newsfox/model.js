@@ -1363,7 +1363,7 @@ if (colId == "Xtend")
 	var art;
 	for (var i=0; i<gCollect.size(); i++)
 		if (arttree.view.selection.isSelected(i))
-			getXbody(gCollect.get(i),gCollect.getFeed(i));
+			getXbodyQueue(gCollect.get(i),gCollect.getFeed(i));
 	return;
 }
 		var colObj = document.getElementById(colId);
@@ -1444,7 +1444,7 @@ if (colId == "Xtend")
 					saveFeed(gCollect.getFeed(row));
 				}
 				else
-					if (art.Xbody == "") getXbody(art, gCollect.getFeed(row));
+					if (art.Xbody == "") getXbodyQueue(art, gCollect.getFeed(row));
 					else articleSelected();
 			}
 		}

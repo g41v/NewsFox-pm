@@ -599,6 +599,7 @@ function fixLinks(node, baseuri, type)
 		});
 		return node;
 	}
+
 	if (nType == "xhtml")
 	{
 		for (var i=0; i<TAG_NAME.length; i++)
@@ -1565,12 +1566,17 @@ function processLazyLoading(node, baseuri)
 					{
 						var srcValue = element.getAttribute("src");
 						// Improved placeholder detection
-						if (srcValue.startsWith("data:") && srcValue.includes("base64")) {
-							// Estimate the decoded size of the base64 content
-							var contentStart = srcValue.indexOf("base64,") + 7;
-							var base64Content = srcValue.substring(contentStart);
-							// If base64 content is small, it's likely a placeholder
-							srcIsPlaceholder = base64Content.length < 1000;
+						if (srcValue.startsWith("data:"))
+						{
+							// Check if it's a base64 or SVG placeholder
+							if (srcValue.includes("base64") || srcValue.includes("svg"))
+							{
+								// Estimate the decoded size of the base64 content
+								var contentStart = srcValue.indexOf(",") + 1;
+								var base64Content = srcValue.substring(contentStart);
+								// If base64 content is small, it's likely a placeholder
+								srcIsPlaceholder = base64Content.length < 1000;
+							}
 						}
 					}
 
@@ -1593,8 +1599,8 @@ function processLazyLoading(node, baseuri)
 								{
 									// Only replace src if it's a placeholder or we don't have a src attribute
 									if (pattern.replacement === "src" &&
-									   element.hasAttribute("src") &&
-									   !srcIsPlaceholder)
+										element.hasAttribute("src") &&
+										!srcIsPlaceholder)
 									{
 										// Keep existing src if it's not a placeholder
 									}
@@ -1702,20 +1708,25 @@ function processLazyLoading(node, baseuri)
 
 					// Check if this is a lazy-loaded image with a placeholder in src
 					var dataSrcMatch = modifiedTag.match(/data-src\s*=\s*["']([^"']+)["']/i) ||
-									  modifiedTag.match(/data-lazy-src\s*=\s*["']([^"']+)["']/i) ||
-									  modifiedTag.match(/lazy-src\s*=\s*["']([^"']+)["']/i);
+										modifiedTag.match(/data-lazy-src\s*=\s*["']([^"']+)["']/i) ||
+										modifiedTag.match(/lazy-src\s*=\s*["']([^"']+)["']/i);
 					var srcMatch = modifiedTag.match(/src\s*=\s*["']([^"']+)["']/i);
 
 					var srcIsPlaceholder = false;
 					if (dataSrcMatch && srcMatch) {
 						var srcValue = srcMatch[1];
 						// Improved placeholder detection
-						if (srcValue.startsWith("data:") && srcValue.includes("base64")) {
-							// Estimate the decoded size of the base64 content
-							var contentStart = srcValue.indexOf("base64,") + 7;
-							var base64Content = srcValue.substring(contentStart);
-							// If base64 content is small, it's likely a placeholder
-							srcIsPlaceholder = base64Content.length < 1000;
+						if (srcValue.startsWith("data:"))
+						{
+							// Check if it's a base64 or SVG placeholder
+							if (srcValue.includes("base64") || srcValue.includes("svg"))
+							{
+								// Estimate the decoded size of the base64 content
+								var contentStart = srcValue.indexOf(",") + 1;
+								var base64Content = srcValue.substring(contentStart);
+								// If base64 content is small, it's likely a placeholder
+								srcIsPlaceholder = base64Content.length < 1000;
+							}
 						}
 					}
 

@@ -34,6 +34,7 @@
 <!ENTITY spam "Включить SPAM-фильтр">
 <!ENTITY transformImageURLs "Transform image URLs">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
+<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
 <!ENTITY globalTab "Глобальные">
 <!ENTITY feedTab "Ленты и Записи">
 <!ENTITY generalTab "Общие">
