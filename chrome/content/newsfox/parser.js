@@ -248,6 +248,18 @@ function Parser2(xml, baseUrl)
 			if (!item.author) item.author = feedAuthor;
 			if (!item.author) item.author = "";
 
+/*            // Call transformImageURLs on the item body after parsing
+			if (item.body)
+			{
+				var tempNode = document.createElement('div');
+				tempNode.innerHTML = item.body; // Convert body to a DOM node
+				if (gOptions.transformImageURLs)
+				{
+					transformImageURLs(tempNode, baseuri.spec, type); // Transform image URLs
+				}
+				item.body = tempNode.innerHTML; // Update the body with transformed content
+			}
+*/
 			this.items.push(item);
 		}
 	}
@@ -1206,8 +1218,24 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url=https://images.gog-static.com/"
 		},
 		{
-			pattern: "/shared.fastly.steamstatic.com/",
-			replacement: "/wsrv.nl/?url=https://shared.fastly.steamstatic.com/"
+			pattern: "/cdn.cloudflare.steamstatic.com/",
+			replacement: "/wsrv.nl/?url=https://cdn.cloudflare.steamstatic.com/"
+		},
+		{
+			pattern: "/shared.cloudflare.steamstatic.com/",
+			replacement: "/wsrv.nl/?url=https://shared.cloudflare.steamstatic.com/"
+		},
+		{
+			pattern: "/cdn.kobo.com/",
+			replacement: "/wsrv.nl/?url=https://cdn.kobo.com/"
+		},
+		{
+			pattern: "/blogger.googleusercontent.com/img/",
+			replacement: "/wsrv.nl/?url=https://blogger.googleusercontent.com/img/"
+		},
+		{
+			pattern: "/secure.gravatar.com/avatar/",
+			replacement: "/wsrv.nl/?url=https://secure.gravatar.com/avatar/"
 		}
 	];
 
@@ -1229,12 +1257,16 @@ function transformImageURLs(node, baseuri, type)
 	{
 		// Get all image elements in the xhtml content
 		var imgElements = node.getElementsByTagNameNS(XHTML, "img");
+		// console.debug("Found image elements:", imgElements.length);
 
 		// Process each image element
 		for (var i = 0; i < imgElements.length; i++)
 		{
 			try
 			{
+				// Log the current image element
+				// console.debug("Processing image element:", imgElements[i]);
+
 				// Process each relevant attribute
 				for (var k = 0; k < imageAttributes.length; k++)
 				{
@@ -1411,7 +1443,7 @@ function processLazyLoading(node, baseuri)
 	}
 
 	try {
-		console.debug("processLazyLoading: Processing node type:", node.nodeName, "with baseuri:", baseuri);
+		// console.debug("processLazyLoading: Processing node type:", node.nodeName, "with baseuri:", baseuri);
 
 		// Define common lazy-loading attribute patterns
 		const lazyPatterns = [
@@ -1489,7 +1521,7 @@ function processLazyLoading(node, baseuri)
 		// Process based on content type
 		if (nType == "xhtml" || node.namespaceURI === XHTML)
 		{
-			// Get all relevant elements that might have lazy loading
+			// Get all relevant elements that might have lazy loading attributes
 			var mediaElements = [];
 
 			try {
@@ -1507,7 +1539,7 @@ function processLazyLoading(node, baseuri)
 				for (var i = 0; i < iframeElements.length; i++) mediaElements.push(iframeElements[i]);
 				for (var i = 0; i < divElements.length; i++) mediaElements.push(divElements[i]);
 
-				console.debug("processLazyLoading: Found", mediaElements.length, "potential lazy-loaded elements");
+				// console.debug("processLazyLoading: Found", mediaElements.length, "potential lazy-loaded elements");
 			} catch (e) {
 				console.error("Error finding media elements:", e.message);
 			}
@@ -1666,7 +1698,7 @@ function processLazyLoading(node, baseuri)
 				// Process each matched element
 				hText = hText.replace(lazyElementRegex, function(match) {
 					var modifiedTag = match;
-					console.debug("processLazyLoading: Processing HTML tag:", match.substring(0, 50) + (match.length > 50 ? "..." : ""));
+					// console.debug("processLazyLoading: Processing HTML tag:", match.substring(0, 50) + (match.length > 50 ? "..." : ""));
 
 					// Check if this is a lazy-loaded image with a placeholder in src
 					var dataSrcMatch = modifiedTag.match(/data-src\s*=\s*["']([^"']+)["']/i) ||
@@ -1779,12 +1811,17 @@ function processLazyLoading(node, baseuri)
 				console.error("Error processing HTML lazy loading:", e.message);
 			}
 		}
-
-		console.debug("processLazyLoading: Completed processing");
+ /*
+		// Call transformImageURLs after processing lazy loading
+		if (gOptions.transformImageURLs)
+		{
+		transformImageURLs(node, baseuri, nType);
+		}
+*/
+		// console.debug("processLazyLoading: Completed processing");
 		return node;
 	} catch (e) {
 		console.error("Error in processLazyLoading:", e.message, e.stack);
-		// Return original node if processing fails
-		return node;
+		return node; // Return original node if processing fails
 	}
 }

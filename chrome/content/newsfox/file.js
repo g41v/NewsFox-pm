@@ -390,7 +390,11 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g, "");
 		body2 = emphsrch(body2);
 		if (tag == "p") body2 = linkify(body2, "x");
-		var xmlBody = new DOMParser(artURI, null).parseFromString(body2,"text/xml");
+
+		// Create a Principal from the artURI
+		var principal = Services.scriptSecurityManager.createContentPrincipal(artURI, {});
+		var xmlBody = new DOMParser(principal).parseFromString(body2, "text/xml");
+
 		// Atom specification guarantees a single <div> element, now a <span>
 		var xBody = doc.importNode(xmlBody.childNodes[0], true);
 		p.appendChild(xBody);
@@ -404,7 +408,9 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		if (tag == "p") body2 = linkify(body2, "x");
 		try
 		{
-			var xmlBody = new DOMParser(artURI, null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
+			// Create a Principal from the artURI
+			var principal = Services.scriptSecurityManager.createContentPrincipal(artURI, {});
+			var xmlBody = new DOMParser(principal).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
 			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
 		}
@@ -2246,7 +2252,7 @@ function processXbody(art, xmlhttp, feed)
 						lowerHref.endsWith(".otf"))
 					{
 						linkElement.parentNode.removeChild(linkElement);
-						console.debug("Removed font/CSS resource: " + href);
+						// console.debug("Removed font/CSS resource: " + href);
 					}
 				}
 			}
@@ -2438,6 +2444,24 @@ function processXbody(art, xmlhttp, feed)
 		console.error("Error filtering CSS/font elements from artText:", e.message);
 	}
 
+	// Call transformImageURLs
+	try
+	{
+		if (gOptions.transformImageURLs && linkDOM && baseUri)
+		{
+			var tempNode = document.createElement('div');
+			tempNode.textContent = artText; // Convert artText to a DOM node
+			// console.debug("Processing transformImageURLs in processXbody function");
+			transformImageURLs(tempNode, baseUri.spec, feed.XfilterType);
+			artText = tempNode.textContent; // Update the artText with transformed content
+		}
+	}
+	catch (e)
+	{
+		console.error("Error transforming image URLs:", e.message);
+		// Continue processing even if transformation fails
+	}
+
 	// Process lazy loading before second pass URL resolution
 	// This ensures we handle all lazy-loaded content in one place
 	try
@@ -2448,7 +2472,7 @@ function processXbody(art, xmlhttp, feed)
 			const needsLazyLoading = /\b(data-src|data-srcset|lazy-src|data-lazy|data-original|loading=["'](lazy|auto)["'])\s*=/i.test(artText);
 
 			if (needsLazyLoading) {
-				console.debug("Processing lazy loading for filter type:", filterType);
+				// console.debug("Processing lazy loading for filter type:", filterType);
 				artText = processLazyLoadingWithErrorHandling(artText, baseUri, `filter-${filterType}`);
 			} else {
 				// console.debug("No lazy loading attributes found, skipping processing");
@@ -2475,7 +2499,7 @@ function processXbody(art, xmlhttp, feed)
 
 function postProcessImages(artText, art, feed)
 {
-	if (feed.XfilterImages) getImages(artText,art,feed);
+	if (feed.XfilterImages) getImages(artText, art, feed);
 	art.Xbody = artText;
 	var arttree = artTreeInvalidate();
 	var index = arttree.currentIndex;
