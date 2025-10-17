@@ -32,6 +32,8 @@
 <!ENTITY favicons "Zaznamke">
 <!ENTITY updateTimeToBookmark "Zapiši URL vira in čase posodobitev v zaznamek">
 <!ENTITY spam "Omogoči filter zanimanj">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Splošno">
 <!ENTITY feedTab "Viri/Članki">
 <!ENTITY generalTab "Splošno">

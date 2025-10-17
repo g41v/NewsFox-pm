@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favikony">
 <!ENTITY updateTimeToBookmark "Zapísať url kanála a aktualizovaný čas do záložky">
 <!ENTITY spam "Zapnúť filter">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Všeobecné">
 <!ENTITY feedTab "Kanál/Články">
 <!ENTITY generalTab "Všeobecné">

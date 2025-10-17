@@ -175,6 +175,8 @@ function AppOptions()
 		this.linkifyXHTML = NFgetPref("advanced.linkifyXHTML", "bool", false);
 		this.wmode = NFgetPref("advanced.wmodeOpaque", "bool", true);
 		this.fixyoutube1 = NFgetPref("advanced.fixyoutube1", "bool", true);
+		this.transformImageURLs = NFgetPref("advanced.transformImageURLs", "bool", true);
+		this.processLazyLoading = NFgetPref("advanced.processLazyLoading", "bool", true);
 		this.fixMailto = NFgetPref("advanced.fixMailto", "bool", true);
 		this.defaultXfilterIsWeb = NFgetPref("advanced.defaultXfilterIsWeb", "bool", false);
 		this.linuxNoDragDrop = NFgetPref("advanced.linuxNoDragAndDrop", "bool", true);
@@ -287,6 +289,8 @@ function AppOptions()
 			NFsetPref("advanced.linkifyXHTML", "bool", this.linkifyXHTML);
 			NFsetPref("advanced.wmodeOpaque", "bool", this.wmode);
 			NFsetPref("advanced.fixyoutube1", "bool", this.fixyoutube1);
+			NFsetPref("advanced.transformImageURLs", "bool", this.transformImageURLs);
+			NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
 			NFsetPref("advanced.fixMailto", "bool", this.fixMailto);
 			NFsetPref("advanced.defaultXfilterIsWeb", "bool", this.defaultXfilterIsWeb);
 			NFsetPref("advanced.linuxNoDragAndDrop", "bool", this.linuxNoDragDrop);

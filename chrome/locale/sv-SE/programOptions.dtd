@@ -32,6 +32,8 @@
 <!ENTITY favicons "Sajtikoner">
 <!ENTITY updateTimeToBookmark "Skriv flödes-URL och uppdatera tider till bokmärke">
 <!ENTITY spam "Aktivera intressefilter">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Globalt">
 <!ENTITY feedTab "Flöden/Artiklar">
 <!ENTITY generalTab "Allmänt">

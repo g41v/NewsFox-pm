@@ -32,6 +32,8 @@
 <!ENTITY favicons "網站圖示">
 <!ENTITY updateTimeToBookmark "將 Feed 網址和更新時間寫入至書籤">
 <!ENTITY spam "啟用興趣篩選">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "全域設定">
 <!ENTITY feedTab "Feed/文章">
 <!ENTITY generalTab "一般">

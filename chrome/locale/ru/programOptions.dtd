@@ -32,6 +32,8 @@
 <!ENTITY favicons "Использовать веб-значки (favicons)">
 <!ENTITY updateTimeToBookmark "Записывать в закладку URL ленты и время обновления">
 <!ENTITY spam "Включить SPAM-фильтр">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Глобальные">
 <!ENTITY feedTab "Ленты и Записи">
 <!ENTITY generalTab "Общие">

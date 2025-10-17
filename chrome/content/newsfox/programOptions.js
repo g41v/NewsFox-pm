@@ -98,6 +98,8 @@ function init()
 	document.getElementById("pOhoriz").checked = gOpt.horiz;
 	document.getElementById("pOfavicons").checked = gOpt.favicons;
 	document.getElementById("pOspam").checked = gOpt.spam;
+	document.getElementById("pOtransformImageURLs").checked = gOpt.transformImageURLs;
+	document.getElementById("pOprocessLazyLoading").checked = gOpt.processLazyLoading;
 	var pOsync = document.getElementById("pOsync");
 	pOsync.checked = gOpt.bookmarkSync;
 	NFsetUserAgent();
@@ -167,6 +169,8 @@ function doAccept()
 	gOpt.horiz = document.getElementById("pOhoriz").checked;
 	gOpt.favicons = document.getElementById("pOfavicons").checked;
 	gOpt.spam = document.getElementById("pOspam").checked;
+	gOpt.transformImageURLs = document.getElementById("pOtransformImageURLs").checked;
+	gOpt.processLazyLoading = document.getElementById("pOprocessLazyLoading").checked;
 	gOpt.bookmarkSync = document.getElementById("pOsync").checked;
 
 	var lenToCheck = Math.min(gOpt.keyword.length,5)-1;

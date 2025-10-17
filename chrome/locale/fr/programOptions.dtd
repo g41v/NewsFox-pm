@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favicônes">
 <!ENTITY updateTimeToBookmark "Écrire les URL et heures de mise à jour des flux dans les marque-pages">
 <!ENTITY spam "Activer le filtre d'intérêt">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Flux/Articles">
 <!ENTITY generalTab "Général">

@@ -32,6 +32,8 @@
 <!ENTITY favicons "Фавикони">
 <!ENTITY updateTimeToBookmark "Напишете адреса и времето за обновяване на отметката">
 <!ENTITY spam "Включване на интерес-филтъра">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Глобални">
 <!ENTITY feedTab "Емисии/Статии">
 <!ENTITY generalTab "Общи">

@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Feed-Adresse und Aktualisierungszeiten in Lesezeichen schreiben">
 <!ENTITY spam "Interessenfilter aktivieren">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Feeds/Artikel">
 <!ENTITY generalTab "Allgemein">

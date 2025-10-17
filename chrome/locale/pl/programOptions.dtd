@@ -32,6 +32,8 @@
 <!ENTITY favicons "Wyświetlaj ikony witryn">
 <!ENTITY updateTimeToBookmark "Zapisuj adres URL kanału i czas aktualizacji do zakładek">
 <!ENTITY spam "Włącz filtry zainteresowań">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Globalne">
 <!ENTITY feedTab "Kanały/Artykuły">
 <!ENTITY generalTab "Ogólne">

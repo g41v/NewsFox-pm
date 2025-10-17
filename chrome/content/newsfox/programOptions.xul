@@ -387,6 +387,8 @@
 				<checkbox id="pOhoriz" label="&horizontalPanes;"/>
 				<checkbox id="pOfavicons" label="&favicons;"/>
 				<checkbox id="pOspam" label="&spam;"/>
+				<checkbox id="pOtransformImageURLs" label="&transformImageURLs;"/>
+				<checkbox id="pOprocessLazyLoading" label="&processLazyLoading;"/>
 				<checkbox id="pOsync" label="&updateTimeToBookmark;"/>
 				<hbox align="center">
 					<label value="&buttonText;" control="radioStatusBarText"/>

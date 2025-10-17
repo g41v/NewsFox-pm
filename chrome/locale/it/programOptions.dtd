@@ -32,6 +32,8 @@
 <!ENTITY favicons "Visualizza favicon">
 <!ENTITY updateTimeToBookmark "Scrivi l&apos;Url del feed e la sua data di aggiornamento nel segnalibro">
 <!ENTITY spam "Attiva il filtro &apos;Interesse&apos;">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Globali">
 <!ENTITY feedTab "Feed/Articoli">
 <!ENTITY generalTab "Generale">

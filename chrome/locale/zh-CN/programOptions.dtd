@@ -32,6 +32,8 @@
 <!ENTITY favicons "小图标">
 <!ENTITY updateTimeToBookmark "将源地址和更新时间写入书签">
 <!ENTITY spam "启用收藏夹过滤器">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "全局">
 <!ENTITY feedTab "源/文章">
 <!ENTITY generalTab "常规">

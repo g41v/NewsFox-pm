@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Escribir las direcciones de los hilos y las fechas de actualización en los marcadores">
 <!ENTITY spam "Habilitar filtro de interés">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Hilos/Artículos">
 <!ENTITY generalTab "General">

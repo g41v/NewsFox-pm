@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favicon&apos;id">
 <!ENTITY updateTimeToBookmark "Salvesta voo url ja uuendamise vahemik järjehoidjana">
 <!ENTITY spam "Võimalda olulisuse filter">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Üldine">
 <!ENTITY feedTab "Vood/Artiklid">
 <!ENTITY generalTab "Üldine">

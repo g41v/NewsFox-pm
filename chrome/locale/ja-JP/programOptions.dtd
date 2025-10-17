@@ -32,6 +32,8 @@
 <!ENTITY favicons "ファビコン">
 <!ENTITY updateTimeToBookmark "フィードのURLと更新日時をブックマークに記入する">
 <!ENTITY spam "関心フィルタを有効にする">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "全体">
 <!ENTITY feedTab "フィード/記事">
 <!ENTITY generalTab "一般">

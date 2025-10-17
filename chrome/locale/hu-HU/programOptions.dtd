@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Írja a hírfolyam url-t és frissítési időpontot a könyvjelzőbe">
 <!ENTITY spam "&quot;Érdekes&quot; szűrő engedélyezése">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Általános">
 <!ENTITY feedTab "Hírfolyam/Cikk">
 <!ENTITY generalTab "Általános">

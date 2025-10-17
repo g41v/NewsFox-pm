@@ -1090,6 +1090,265 @@ function fixYoutube1(node, baseuri, type)
 }
 
 /**
+ * Transforms image URLs based on specific patterns, handling all relevant image attributes
+ * @param {Node} node - DOM node containing content
+ * @param {String} baseuri - Base URI for relative links
+ * @param {Number} type - Content type indicator
+ */
+function transformImageURLs(node, baseuri, type)
+{
+	// Get node type attribute
+	var nType = node.getAttribute("type");
+
+	// Define URL patterns and their replacements to use across all content types
+	var urlPatterns = [
+		{
+			pattern: "/i0.wp.com/",
+			replacement: "/"
+		},
+		{
+			pattern: "/m.media-amazon.com/",
+			replacement: "/wsrv.nl/?url=https://m.media-amazon.com/"
+		},
+		{
+			pattern: "/images-na.ssl-images-amazon.com/",
+			replacement: "/wsrv.nl/?url=https://images-na.ssl-images-amazon.com/"
+		},
+		{
+			pattern: "/i.ytimg.com/",
+			replacement: "/wsrv.nl/?url=https://i.ytimg.com/"
+		},
+		{
+			pattern: "/items.gog.com/",
+			replacement: "/wsrv.nl/?url=https://items.gog.com/"
+		},
+		{
+			pattern: "/images.gog-static.com/",
+			replacement: "/wsrv.nl/?url=https://images.gog-static.com/"
+		}
+	];
+
+	// Define all image attributes that should be processed
+	const imageAttributes = [
+		"src",
+		"srcset",
+		"data-src",
+		"data-srcset",
+		"data-original",
+		"data-lazy",
+		"data-lazy-src",
+		"data-lazy-srcset",
+		"loading-src"
+	];
+
+	// Process xhtml content
+	if (nType == "xhtml")
+	{
+		// Get all image elements in the xhtml content
+		var imgElements = node.getElementsByTagNameNS(XHTML, "img");
+
+		// Process each image element
+		for (var i = 0; i < imgElements.length; i++)
+		{
+			try
+			{
+				// Process each relevant attribute
+				for (var k = 0; k < imageAttributes.length; k++)
+				{
+					var attrName = imageAttributes[k];
+
+					if (imgElements[i].hasAttribute(attrName))
+					{
+						var attrValue = imgElements[i].getAttribute(attrName);
+					var modified = false;
+
+						// Special handling for srcset which may contain multiple URLs
+						if (attrName === "srcset" || attrName === "data-srcset" || attrName === "data-lazy-srcset")
+						{
+							// Split the srcset into individual sources
+							var sources = attrValue.split(',');
+
+							for (var s = 0; s < sources.length; s++)
+							{
+								var parts = sources[s].trim().split(' ');
+								var url = parts[0];
+
+								// Apply transformations to URL
+					for (var j = 0; j < urlPatterns.length; j++)
+					{
+									if (url.indexOf(urlPatterns[j].pattern) > -1)
+						{
+										url = url.replace(urlPatterns[j].pattern, urlPatterns[j].replacement);
+							modified = true;
+						}
+					}
+
+					if (modified)
+					{
+									parts[0] = url;
+									sources[s] = parts.join(' ');
+								}
+							}
+
+							// Rejoin the sources
+							if (modified)
+							{
+								imgElements[i].setAttribute(attrName, sources.join(', '));
+							}
+						}
+						else
+						{
+							// Standard handling for other attributes
+							for (var j = 0; j < urlPatterns.length; j++)
+							{
+								if (attrValue.indexOf(urlPatterns[j].pattern) > -1)
+								{
+									attrValue = attrValue.replace(
+										urlPatterns[j].pattern,
+										urlPatterns[j].replacement
+									);
+									modified = true;
+								}
+							}
+
+							// Update the attribute if modified
+							if (modified)
+							{
+								imgElements[i].setAttribute(attrName, attrValue);
+							}
+						}
+					}
+				}
+			}
+			catch (e)
+			{
+				console.error("Error processing xhtml image URL: " + e.name + "," + e.message, { e });
+			}
+		}
+	}
+	else if (type <= 1 || nType == "html" || nType == "text/html")
+	{
+		// Get the HTML text content
+		var hText = node.textContent;
+
+		// Create regex patterns for all image attributes we want to transform
+		var imgAttributeRegexes = [];
+		for (var k = 0; k < imageAttributes.length; k++)
+		{
+			var attrName = imageAttributes[k];
+			// Create case-insensitive regex for attribute
+			imgAttributeRegexes.push(new RegExp(attrName + '\\s*=\\s*(["\'])(.*?)\\1', 'gi'));
+		}
+
+		// Process all image tags
+		var imgTagRegex = /<img\s+[^>]*>/gi;
+		var imgTags = hText.match(imgTagRegex);
+
+		if (imgTags)
+		{
+			for (var i = 0; i < imgTags.length; i++)
+			{
+				var imgTag = imgTags[i];
+				var modifiedImgTag = imgTag;
+				var wasModified = false;
+
+				// Process each attribute type
+				for (var k = 0; k < imgAttributeRegexes.length; k++)
+				{
+					var attrRegex = imgAttributeRegexes[k];
+					var attrMatches;
+
+					// Reset regex state
+					attrRegex.lastIndex = 0;
+
+					while ((attrMatches = attrRegex.exec(imgTag)) !== null)
+					{
+						var fullMatch = attrMatches[0];
+						var quote = attrMatches[1];
+						var attrValue = attrMatches[2];
+						var attrModified = false;
+
+						// Check if this is a srcset attribute that needs special handling
+						if (fullMatch.toLowerCase().includes('srcset'))
+						{
+							// Split the srcset into individual sources
+							var sources = attrValue.split(',');
+							for (var s = 0; s < sources.length; s++)
+							{
+								var parts = sources[s].trim().split(' ');
+								var url = parts[0];
+
+								// Apply transformations to URL
+								for (var j = 0; j < urlPatterns.length; j++)
+								{
+									if (url.indexOf(urlPatterns[j].pattern) > -1)
+									{
+										url = url.replace(urlPatterns[j].pattern, urlPatterns[j].replacement);
+										attrModified = true;
+									}
+								}
+
+								if (attrModified)
+								{
+									parts[0] = url;
+									sources[s] = parts.join(' ');
+								}
+							}
+
+							if (attrModified)
+							{
+								var newAttrValue = sources.join(', ');
+								modifiedImgTag = modifiedImgTag.replace(
+									fullMatch,
+									fullMatch.replace(attrValue, newAttrValue)
+								);
+								wasModified = true;
+							}
+						}
+						else
+						{
+							// Regular attribute handling
+							var newAttrValue = attrValue;
+
+							// Apply transformations
+							for (var j = 0; j < urlPatterns.length; j++)
+							{
+								if (newAttrValue.indexOf(urlPatterns[j].pattern) > -1)
+								{
+									newAttrValue = newAttrValue.replace(
+										urlPatterns[j].pattern,
+										urlPatterns[j].replacement
+									);
+									attrModified = true;
+								}
+							}
+
+							if (attrModified)
+							{
+								modifiedImgTag = modifiedImgTag.replace(
+									fullMatch,
+									fullMatch.replace(attrValue, newAttrValue)
+								);
+								wasModified = true;
+							}
+						}
+					}
+				}
+
+				// Replace the image tag if it was modified
+				if (wasModified)
+				{
+					hText = hText.replace(imgTag, modifiedImgTag);
+				}
+			}
+
+			// Update the node's content if changes were made
+			node.textContent = hText;
+		}
+	}
+}
+
+/**
  * Process lazy-loaded images at display time
  * This function applies all the lazy loading transformations but only at display time
  *

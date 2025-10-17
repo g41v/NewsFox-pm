@@ -32,6 +32,8 @@
 <!ENTITY favicons "Favikoner">
 <!ENTITY updateTimeToBookmark "Skriv feed-url og tidspunkt for opdatering til bogmærke">
 <!ENTITY spam "Aktiver interessefilter">
+<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY processLazyLoading "Process lazy-loading URLs">
 <!ENTITY globalTab "Globalt">
 <!ENTITY feedTab "Feeds/Artikler">
 <!ENTITY generalTab "Generelt">
