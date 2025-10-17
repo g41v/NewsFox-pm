@@ -36,6 +36,8 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
+// traceEmptyUrlCalls(); // Remove after debugging for empty URLs
+
 ////////////////////////////////////////////////////////////////
 // Global
 ////////////////////////////////////////////////////////////////
@@ -1009,7 +1011,7 @@ function repairIt(xmlhttp)
 	}
 
 	// Handle additional parser errors
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
 	{
 		// from Nils Maier, Sage bug#15473, just replace & with &amp;
 		httpText = httpText.replace(/&(?!amp;|quot;|lt;|gt;)/gm, '&amp;');
@@ -1017,7 +1019,7 @@ function repairIt(xmlhttp)
 	}
 
 	// Final check for parser errors
-	if (xml2.documentElement.localName.toLowerCase() == 'parsererror') 
+	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
 	{
 		var tmp = httpText.indexOf("<?xml");
 		httpText = httpText.substring(tmp);

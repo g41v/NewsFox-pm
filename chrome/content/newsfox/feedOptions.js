@@ -306,8 +306,23 @@ function toggleIcon()
 	}
 }
 
+/**
+ * Handles changes to the feed URL input field.
+ *
+ * This function checks if the input URL starts with "https" to determine
+ * whether to display the authentication options. It also manages the
+ * blurring state to prevent multiple invocations while processing.
+ *
+ * @function feedChange
+ * @returns {boolean} Returns true if the function executes successfully,
+ *                    otherwise returns undefined if required elements are not found.
+ *
+ * @throws {Error} Logs an error to the console if the required DOM elements
+ *                 (urlElement and authGroupbox) are not found.
+ */
 function feedChange()
 {
+	// Rewriten
 	if (blurring) return; // Check if already blurring
 	blurring = true;
 

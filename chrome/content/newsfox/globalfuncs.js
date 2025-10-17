@@ -124,87 +124,228 @@ var stringTrim = function(v)
 
 // Add a URL resolution cache
 const resolvedUrlCache = new Map();
+const MAX_URL_CACHE_SIZE = 1000;
 
 /**
- * Enhanced resolveUrl function with improved validation and error handling
- * @param {string} url - The relative URL to resolve
- * @param {string} baseUri - The base URI for resolution
- * @return {string} - The resolved URL
+ * Gets a safe base URI for URL resolution
+ * @param {Object} art - The article object
+ * @param {Object} feed - The feed object
+ * @param {Object} [xmlhttp] - Optional XMLHttpRequest object with response
+ * @returns {string} - A safe base URI for URL resolution
  */
-function resolveUrl(url, baseUri) {
-	// Skip processing for empty URLs, data URLs, and absolute URLs
-	if (!url || url === '' || url === '#' || url.startsWith('javascript:') || 
-		url.startsWith('data:') || /^(https?|ftp|file):/i.test(url)) {
-		return url;
+function getSafeBaseUri(art, feed, xmlhttp)
+{
+	const candidates = [];
+
+	// Validate inputs but don't return early - try best-effort processing
+	const validArt = art && typeof art === 'object';
+	const validFeed = feed && typeof feed === 'object';
+
+	if (!validArt)
+	{
+		console.error("Invalid article object provided to getSafeBaseUri");
 	}
-	
-	// Validate baseUri
-	if (!baseUri || typeof baseUri !== 'string') {
-		console.warn("Invalid baseUri provided for URL resolution:", baseUri);
-		return url;
+
+	if (!validFeed)
+	{
+		console.error("Invalid feed object provided to getSafeBaseUri");
 	}
-	
-	// Use cache to avoid redundant processing
-	const cacheKey = url + '|' + baseUri;
-	if (resolvedUrlCache.has(cacheKey)) {
-		return resolvedUrlCache.get(cacheKey);
-	}
-	
-	try {
-		// Sanitize URL and baseUri before processing
-		url = sanitizeUrlForResolution(url);
-		baseUri = sanitizeUrlForResolution(baseUri);
-		
-		// Use existing URL resolution logic with better error handling
-		const ios = Components.classes["@mozilla.org/network/io-service;1"]
-				  .getService(Components.interfaces.nsIIOService);
-		
-		// First validate baseUri can be converted to URI
-		let baseUriObj;
-		try {
-			baseUriObj = ios.newURI(baseUri, null, null);
-		} catch (baseError) {
-			console.error("Invalid base URI:", baseUri, baseError.message);
-			return url; // Return original if base is invalid
+
+	// Ensure feed.url is always considered as a fallback
+	if (validFeed && feed.url && typeof feed.url === 'string') {
+		try
+		{
+			// Extract domain from feed URL to use as a base fallback
+			const urlParts = feed.url.match(/^(https?:\/\/[^\/]+)/i);
+			if (urlParts && urlParts[1])
+			{
+				candidates.push(
+				{
+					url: urlParts[1],
+					source: 'feed.url (domain)'
+				});
+			}
 		}
-		
-		// Now try to resolve the URL against the base
-		const uri = ios.newURI(url, null, baseUriObj);
-		const resolved = uri.spec;
-		
-		// Cache the result for future use
-		resolvedUrlCache.set(cacheKey, resolved);
-		return resolved;
-	} catch(e) {
-		console.error("URL resolution failed:", e.message, {url, baseUri});
-		return url;  // Return original URL on error
+		catch (e)
+		{
+			console.warn("Could not parse feed.url as base URI:", feed.url);
+		}
 	}
+
+	// Return first valid candidate with explicit null-checking
+	for (const candidate of candidates)
+	{
+		if (candidate.url && typeof candidate.url === 'string' &&
+			candidate.url.trim() !== '' &&
+			!candidate.url.startsWith('chrome://') &&
+			/^(https?|ftp|file):/.test(candidate.url))
+		{
+			return candidate.url;
+		}
+	}
+
+	console.warn("No valid base URI found from candidates");
+	return '';
 }
 
 /**
- * Sanitizes a URL for safe resolution
+ * Enhanced URL resolution function with proper error handling
+ * @param {string} url - The URL to resolve
+ * @param {string} baseUri - The base URI to resolve against
+ * @returns {string} The resolved URL
+ */
+function resolveUrl(url, baseUri)
+{
+	// Context-aware empty URL handling - check the caller
+	if (!url)
+	{
+		// Track the call stack to help find where empty URLs are coming from
+		console.warn("Invalid URL provided to resolveUrl:", url, new Error().stack);
+		return '';
+	}
+
+	// Normalize URL to string (might be a URI object)
+	const urlStr = (typeof url === 'object' && url.spec) ? url.spec : String(url);
+
+	// Normalize baseUri to string
+	let baseUriStr = '';
+	if (baseUri)
+	{
+		if (typeof baseUri === 'object')
+		{
+			// Handle nsIURI objects
+			if (baseUri.spec) {
+				baseUriStr = baseUri.spec;
+			} else if (baseUri.href) {
+				baseUriStr = baseUri.href;
+			}
+		}
+		else
+		{
+			baseUriStr = String(baseUri);
+		}
+	}
+
+	// Cache check with normalized values
+	const cacheKey = `${urlStr}|${baseUriStr}`;
+	if (resolvedUrlCache.has(cacheKey)) {
+		return resolvedUrlCache.get(cacheKey);
+	}
+
+	// Skip processing for special cases
+	if (urlStr.startsWith('data:') ||
+		urlStr.startsWith('javascript:') ||
+		urlStr.startsWith('mailto:'))
+		{
+		return urlStr;
+		}
+
+	// Handle absolute URLs
+	if (urlStr.match(/^[a-z]+:\/\//i))
+	{
+		resolvedUrlCache.set(cacheKey, urlStr);
+		return urlStr;
+	}
+
+	// Handle chrome:// URLs
+	if (urlStr.startsWith('chrome://') || (baseUriStr && baseUriStr.startsWith('chrome://')))
+	{
+		console.warn("Skipping chrome:// URL resolution:", { url: urlStr, baseUri: baseUriStr });
+		return ''; // Return empty string for better security
+	}
+
+	// Skip resolution if no baseUri available
+	if (!baseUriStr)
+	{
+		return urlStr;
+	}
+
+	let resolved = '';
+	try
+	{
+		// Handle protocol-relative URLs
+		if (urlStr.startsWith('//'))
+		{
+			resolved = 'https:' + urlStr;
+		}
+		// Handle root-relative URLs
+		else if (urlStr.startsWith('/'))
+		{
+			const { domain } = extractUrlComponents(baseUriStr);
+			resolved = domain ? domain + urlStr : '';
+		}
+		// Handle relative paths
+		else
+		{
+			// Ensure baseUri ends with / but handle paths correctly
+			let base = baseUriStr;
+			if (!baseUriStr == "" && !baseUriStr.endsWith('/'))
+			{
+				// Handle case where baseUri is a file path
+				const lastSlashIndex = baseUriStr.lastIndexOf('/');
+				if (lastSlashIndex > 8) { // After http://
+					base = baseUriStr.substring(0, lastSlashIndex + 1);
+				} else {
+					base = baseUriStr + '/';
+				}
+			}
+
+			// Remove any ./ or multiple slashes
+			const cleanUrl = urlStr.replace(/^\.\//, '').replace(/\/+/g, '/');
+			resolved = base + cleanUrl;
+		}
+	}
+	catch (e)
+	{
+		console.error("URL resolution error:", e.message, { url: urlStr, baseUri: baseUriStr });
+		return '';
+	}
+
+	// Validate resolved URL
+	if (!isValidSafeUrl(resolved))
+	{
+		console.warn("URL resolution produced potentially unsafe URL:", resolved);
+		resolved = '';
+	}
+
+	// Cache management
+	if (resolvedUrlCache.size > MAX_URL_CACHE_SIZE)
+	{
+		// Clean up oldest 10% of entries
+		const keysToDelete = Math.floor(MAX_URL_CACHE_SIZE * 0.1);
+		const keys = Array.from(resolvedUrlCache.keys()).slice(0, keysToDelete);
+		keys.forEach(key => resolvedUrlCache.delete(key));
+	}
+
+	// Cache the result
+	resolvedUrlCache.set(cacheKey, resolved);
+	return resolved;
+}
+
+/**
+ * Sanitizes URLs for resolution
  * @param {string} url - The URL to sanitize
  * @return {string} - The sanitized URL
  */
-function sanitizeUrlForResolution(url) {
+function sanitizeUrlForResolution(url)
+{
 	if (!url) return '';
-	
-	// Remove whitespace
-	url = url.trim();
-	
-	// Handle specific problematic URL patterns
-	if (url.includes(' ')) {
-		url = url.replace(/\s+/g, '%20');
+
+	// Ensure we're working with a string
+	url = url.toString();
+
+	// Remove any trailing spaces or problematic characters
+	url = url.trim()
+		 .replace(/[\r\n\t]/g, '')
+		 .replace(/\\+/g, '/');
+
+	// Handle common problematic cases
+	if (url === '/')
+	{
+		console.warn("Found bare '/' URL which could cause chrome:// resolution issues");
+		return '';
 	}
-	
-	// Handle improperly encoded characters that cause URI malformation
-	const problematicChars = /[\[\]{}|\\^<>`]/g;
-	if (problematicChars.test(url)) {
-		url = url.replace(problematicChars, (match) => {
-			return encodeURIComponent(match);
-		});
-	}
-	
+
 	return url;
 }
 
@@ -406,7 +547,7 @@ function checkLocalPng(id,png,prop)
 {
 	if (!prop) prop = "image";
 	var localPng = getPng(png);
-	if (localPng.charAt(0) == "f")  // local "f"ile
+	if (localPng.charAt(0) == "f" || localPng.charAt(0) == "F")  // local "f"ile
 		document.getElementById(id).setAttribute(prop, localPng);
 }
 
@@ -702,4 +843,28 @@ function toBinStr(text)
 	for(var i=0; i<text.length; i++)
 		retval += String.fromCharCode(text.charCodeAt(i) & 0xff);
 	return retval;
+}
+
+/**
+ * Temporary debugging function to trace empty URL sources
+ * Remove after debugging is complete
+ */
+function traceEmptyUrlCalls()
+{
+	// Store original function
+	const originalResolveUrl = resolveUrl;
+
+	// Replace with instrumented version
+	window.resolveUrl = function(url, baseUri)
+	{
+		if (!url)
+		{
+			console.error("EMPTY URL TRACE - Called from:", new Error().stack);
+		}
+		return originalResolveUrl(url, baseUri);
+	};
+
+	console.log("URL tracing enabled");
+// Call this function early in the application startup
+// traceEmptyUrlCalls();
 }

@@ -453,26 +453,68 @@ var NFstatusBar =
 			window.alert(badRE + ": " + NFgetPref("internal.statusBarLinksMatch", "str", NF_STATUSBARLINKSMATCH));
 			re = new RegExp(NF_STATUSBARLINKSMATCH,"");
 		}
-		links = window.gBrowser.contentDocument.links;
-		for (i=0; i<links.length; i++)
-			if (links[i].href.match(re)) linksArray.push(links[i]);
-		for (i=0; i<linksArray.length; i++)
-		{
-			var link = linksArray[i];
-			var title = link.title;
-			var text = null;
-			try { text = link.textContent; }
-			catch(e) {}
-			var href = baseURI.resolve(linksArray[i].href);
-			menuItem = document.createElement("menuitem");
-			menuItem.setAttribute("label",text || title || href);
-			menuItem.setAttribute("tooltiptext", ">" + href);
-			menupopup2.appendChild(menuItem);
-		}
-		menu.appendChild(menupopup2);
 
-		if (linksArray.length) return menu;
-		else return null;
+		// Fix: Properly access links collection and handle errors
+		var links = [];
+		try {
+			links = window.gBrowser.contentDocument.links || [];
+		} catch(e) {
+			console.error("Error accessing document links:", e);
+		}
+
+		// Build links array with proper error handling
+		for (var i=0; i < links.length; i++)
+		{
+			try
+			{
+				if (links[i].href && links[i].href.match(re))
+				{
+					linksArray.push(links[i]);
+				}
+			}
+			catch(e)
+			{
+				console.warn("Error processing link:", e);
+			}
+		}
+
+		// Create menu items for each link
+		for (var i=0; i < linksArray.length; i++)
+		{
+			try
+			{
+				var link = linksArray[i];
+				var title = link.title || "";
+				var text = "";
+				try { text = link.textContent || ""; } catch(e) {}
+
+				// Safely resolve URL with error handling
+				var href = "";
+				try
+				{
+					href = baseURI && typeof baseURI.resolve === 'function'
+						? baseURI.resolve(linksArray[i].href)
+						: linksArray[i].href;
+				}
+				catch(e)
+				{
+					console.error("Error resolving URL:", e);
+					href = linksArray[i].href || "";
+				}
+
+				var menuItem = document.createElement("menuitem");
+				menuItem.setAttribute("label", text || title || href);
+				menuItem.setAttribute("tooltiptext", ">" + href);
+				menupopup2.appendChild(menuItem);
+			}
+			catch(e)
+			{
+				console.error("Error creating menu item:", e);
+			}
+		}
+
+		menu.appendChild(menupopup2);
+		return linksArray.length ? menu : null;
 	},
 
 	subscribe: function(event)

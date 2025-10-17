@@ -61,6 +61,11 @@ const HREF_NAME = [ "url", "url", "href", "href" ];
 const TAG_NAME = [ "a", "img", "area", "source", "link" ];
 const ATTR_NAME = [ "href", "src", "srcset", "data-src", "data-srcset" ];
 
+/**
+ * Parser for RSS and Atom feeds
+ * @param {Object} xml - The XML document to parse
+ * @param {string} baseUrl - Base URL for resolving relative URLs
+ */
 function Parser2(xml, baseUrl)
 {
 	this.title = null;
@@ -70,36 +75,29 @@ function Parser2(xml, baseUrl)
 	// type: 0=RSS1.0, 1=RSS2.0, 2=atom0.3, 3=atom1.0
 	this.parse = function(xml, type, baseUrl)
 	{
-		// Validate inputs
-		if (!xml || !type) {
-			throw new Error("Parser2: Invalid input parameters");
-		}
-
-		// DEBUGGING: Check for chrome:// URLs in baseUrl
-		if (baseUrl && typeof baseUrl === 'string' && baseUrl.startsWith('chrome://')) {
-			console.warn("Chrome URL detected in Parser2.parse baseUrl:", baseUrl);
-		}
-
-		// Ensure baseUrl is properly formatted
-		baseUrl = baseUrl || "";
-		if (baseUrl && !baseUrl.match(/^[a-z]+:/i)) {
-			baseUrl = "http://" + baseUrl;
-		}
-
 		var channel = xml.getElementsByTagNameNS(NS[type], CHANNEL_NAME[type]);
 
 		// Check if channel is empty
 		if (!channel || channel.length === 0) {
 			console.error("Parser2: No channel found in the provided XML.");
-			throw new Error("Parser2: Invalid feed: No channel found.");
 			return; // Gracefully return
 		}
 
-		// BASE - Improve base URI handling
-		var baseuri = baseUrl;
-		if (channel[0]) {
-			baseuri = getBaseURI(channel[0], baseuri, type) || baseuri;
+		// BASE
+		var baseuri =
+		{
+			spec: baseUrl || '',
+			resolve: function(relativeUrl)
+			{
+				return resolveUrl(relativeUrl, this.spec);
+			}
+		};
+
+		if (baseuri && baseuri.spec)
+		{
+			baseuri = adjustBase(baseuri, "/");
 		}
+		baseuri = getBaseURI(channel[0], baseuri, type);
 
 		// TITLE
 		var title = channel[0].getElementsByTagNameNS(NS[type], "title");
@@ -107,7 +105,7 @@ function Parser2(xml, baseUrl)
 
 		// HOMEPAGE
 		var uri = getLink(channel[0], baseuri, type);
-		if (uri) this.link = uri.resolve("");
+		if (uri) this.link = uri.spec;
 
 		// FEED AUTHOR
 		var feedAuthor = getAuthor(channel[0], type, true);
@@ -120,8 +118,7 @@ function Parser2(xml, baseUrl)
 		{
 			var item = new Article();
 			// ITEM:BASE
-			var itembase = null;
-			itembase = getBaseURI(items[i], baseuri, type);
+			var itembase = getBaseURI(items[i], baseuri, type);
 			// ITEM:TITLE
 			title = items[i].getElementsByTagNameNS(NS[type], "title");
 			for (var j = 0; j < title.length; j++)
@@ -274,25 +271,36 @@ function Parser2(xml, baseUrl)
 	this.parse(xml, type, baseUrl);
 }
 
-function getBaseURI(xml, base, type)
+function getBaseURI(xml, base, type, feed)
 {
-	if (!xml || typeof base === 'undefined') {
-		console.warn("Invalid getBaseURI input:", { xml, base, type });
+	if (!xml || typeof base === 'undefined')
+	{
+		console.warn("Invalid inputs to getBaseURI:", { xml, base });
 		return null;
 	}
 
-	// DEBUGGING: Check for chrome:// URLs in base
-	if (base && typeof base === 'string' && base.startsWith('chrome://')) {
-		console.warn("Chrome URL detected in getBaseURI base:", base);
-		// Don't process or return chrome:// URLs as base URIs for content
-		return null;
+	// Convert base to URI-like object if it's a string
+	let baseuri = base;
+	if (typeof base === 'string' && base)
+	{
+		baseuri =
+		{
+			spec: base,
+			resolve: function(relativeUrl)
+			{
+				return resolveUrl(relativeUrl, this.spec);
+			}
+		};
 	}
 
-	var baseuri = base;
-
+	// Handle xml:base attribute
 	if (xml.hasAttribute("xml:base"))
-		baseuri = adjustBase(baseuri,xml.getAttribute("xml:base"));
-	baseuri = getAtomSelfLink(xml,baseuri);
+	{
+		const xmlBase = xml.getAttribute("xml:base");
+		baseuri = adjustBase(baseuri, xmlBase);
+	}
+
+	baseuri = getAtomSelfLink(xml, baseuri);
 	return baseuri;
 }
 
@@ -302,43 +310,25 @@ function adjustBase(baseuri, url)
 
 	try
 	{
-		// First, try to use our global resolveUrl function for consistency
-		var spec = resolveUrl(url, baseuri ? baseuri.spec : null);
+		// Get the spec from baseuri if it's an object
+		const baseUriSpec = baseuri ? (typeof baseuri === 'object' ? baseuri.spec : baseuri) : null;
 
-		// Create a URI-like object compatible with the codebase
+		// Resolve the URL
+		var spec = resolveUrl(url, baseUriSpec);
+
+		// Return a simple object with spec and resolve methods
 		return {
 			spec: spec,
-			resolve: function(relativeUrl) {
+			resolve: function(relativeUrl)
+			{
 				return resolveUrl(relativeUrl, this.spec);
-			},
-			scheme: (function() {
-				var match = spec.match(/^([a-z][a-z0-9+.-]*):\/\//i);
-				return match ? match[1] : "";
-			})(),
-			host: (function() {
-				var match = spec.match(/^[a-z][a-z0-9+.-]*:\/\/([^\/]+)/i);
-				return match ? match[1] : "";
-			})()
+			}
 		};
 	}
 	catch(e)
 	{
-		// Fallback to original implementation if resolveUrl fails
-		try
-		{
-			// Get the IO Service from Mozilla's XPCOM components
-			var ioSvc = Components.classes['@mozilla.org/network/io-service;1']
-								 .getService(Components.interfaces.nsIIOService);
-
-			// Attempt to create a new URI with the provided base URI and URL
-			return ioSvc.newURI(url, null, baseuri);
-		}
-		catch(e2)
-		{
-			console.error("adjustBase failed:", { baseuri, url, error: e2.message });
-			// Return null if URI creation fails
-			return null;
-		}
+		console.error("Error in adjustBase:", e.message);
+		return baseuri;
 	}
 }
 
@@ -348,7 +338,7 @@ function getAtomSelfLink(xml, baseuri)
 	if (!xml || !baseuri)
 	{
 		console.error("Invalid getAtomSelfLink input: xml (" + xml + ") and baseuri (" + baseuri + ") must be provided.", { xml, baseuri });
-		return baseuri;
+		// return baseuri;
 	}
 
 	var url = null;
@@ -364,26 +354,28 @@ function getAtomSelfLink(xml, baseuri)
 		}
 	}
 
-	if (url && url.indexOf("feeds.feedburner.com") > -1) return baseuri;
+	if (!url || url.includes("feeds.feedburner.com")) return baseuri;
 
-	if (url)
+	try
 	{
-		try
-		{
-			// Create a new nsIURI-compatible object using our resolved URL
-			var spec = resolveUrl(url, baseuri.spec);
-			return {
-				spec: spec,
-				resolve: function(relativeUrl) {
-					return resolveUrl(relativeUrl, this.spec);
-				}
-			};
-		}
-		catch (e)
-		{
-			console.error("Error creating URI object in getAtomSelfLink:", e);
-			return baseuri;
-		}
+		// Ensure baseuri.spec exists before using it
+		const baseUriSpec = (baseuri && typeof baseuri.spec === 'string')
+			? baseuri.spec
+			: (typeof baseuri === 'string' ? baseuri : '');
+
+		// Return a simple object with spec and resolve methods
+		const resolvedUrl = resolveUrl(url, baseUriSpec);
+		return {
+			spec: resolvedUrl,
+			resolve: function(relativeUrl)
+			{
+				return resolveUrl(relativeUrl, this.spec);
+			}
+		};
+	}
+	catch (e)
+	{
+		console.error("Error in getAtomSelfLink:", e.message);
 	}
 
 	return baseuri;
@@ -392,7 +384,7 @@ function getAtomSelfLink(xml, baseuri)
 function getLink(xml, baseuri, type)
 {
 	// Validate inputs
-	if (!xml || !baseuri || typeof type !== 'number')
+	if (!xml || !baseuri)
 	{
 		console.error("Invalid getLink input: xml (" + xml + "), baseuri (" + baseuri + "), and type (" + type + ") must be provided.", { xml, baseuri, type });
 		return null; // Return null if inputs are invalid
@@ -443,10 +435,24 @@ function getLink(xml, baseuri, type)
 	{
 		try
 		{
-			// Use our global resolveUrl function
+			// Basic URL validation
+			if (url.startsWith('javascript:') || url.startsWith('data:'))
+			{
+				console.warn("Potentially unsafe URL scheme detected:", url);
+				return null;
+			}
+
+			// Ensure baseuri.spec exists before using it
+			const baseUriSpec = (baseuri && typeof baseuri.spec === 'string')
+				? baseuri.spec
+				: (typeof baseuri === 'string' ? baseuri : '');
+
+			// Return a simple object with spec and resolve methods
+			const resolvedUrl = resolveUrl(url, baseUriSpec);
 			return {
-				spec: resolveUrl(url, baseuri.spec),
-				resolve: function(relativeUrl) {
+				spec: resolvedUrl,
+				resolve: function(relativeUrl)
+				{
 					return resolveUrl(relativeUrl, this.spec);
 				}
 			};
@@ -472,6 +478,17 @@ function setTZDate(isoDate)
 {
 	try
 	{
+		// Check for "YYYY-MM-DD HH:MM:SS ±HHMM" format
+		const traditionalFormat = /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})\s*([-+]\d{4})?$/;
+		const match = isoDate.match(traditionalFormat);
+
+		if (match)
+	{
+			// Convert to ISO 8601 format
+			const [_, year, month, day, hour, minute, second, offset] = match;
+			isoDate = `${year}-${month}-${day}T${hour}:${minute}:${second}${offset ? offset.slice(0,3) + ':' + offset.slice(3) : ''}`;
+		}
+
 		var dateTime = isoDate.split("T");
 		var ymd = dateTime[0].split("-");
 		for (var i=ymd.length; i<3; i++) ymd[i] = 1;
@@ -508,28 +525,40 @@ function setTZDate(isoDate)
 
 function fixLinks(node, baseuri, type)
 {
-	if (!node || !baseuri) {
-		console.warn("fixLinks called with invalid parameters:", { node, baseuri, type });
-		return;
-	}
+	if (!node || !baseuri) return node;
 
-	// Ensure baseuri is a string
-	if (typeof baseuri === 'object' && baseuri.spec) {
-		baseuri = baseuri.spec;
-	}
+	// Ensure we have a consistent baseuri object while preserving existing functionality
+	const base = typeof baseuri === 'string' ?
+		{
+			spec: baseuri,
+			resolve: function(relativeUrl)
+			{
+				return resolveUrl(relativeUrl, this.spec);
+			}
+		} : baseuri;
 
-	// Validate baseuri format
-	if (!baseuri.match(/^[a-z]+:/i)) {
-		console.warn("fixLinks: Invalid base URI format:", baseuri);
-		return;
+	// Validate base URI format - use spec if available
+	const baseUriStr = base.spec || base;
+	if (!baseUriStr || (typeof baseUriStr === 'string' && !baseUriStr.match(/^[a-z]+:/i)))
+	{
+		console.warn("fixLinks: Invalid base URI format:", baseUriStr);
+		return node;
 	}
 
 	if (gOptions.fixyoutube1)
-		fixYoutube1(node, baseuri, type);
+	{
+		fixYoutube1(node, base, type);
+	}
+
 	if (gOptions.wmode)
-		adjustWmode(node, baseuri, type);
+	{
+		adjustWmode(node, base, type);
+	}
+
 	if (gOptions.transformImageURLs)
-		transformImageURLs(node, baseuri, type);
+	{
+		transformImageURLs(node, base, type);
+	}
 
 	var nType = node.getAttribute("type");
 	if (!gOptions.openInViewPane)
@@ -538,8 +567,12 @@ function fixLinks(node, baseuri, type)
 		{
 			var kids = node.getElementsByTagNameNS(XHTML,"a");
 			for (var j=0; j<kids.length; j++)
+			{
 				if (kids[j].hasAttribute("href"))
+				{
 					kids[j].setAttribute("target", "_blank");
+				}
+			}
 		}
 		else if (type <= 1 || nType == "html" || nType == "text/html")
 		{
@@ -553,12 +586,15 @@ function fixLinks(node, baseuri, type)
 			node.textContent = makeTarget_Blank(hText);
 		}
 	}
-	baseuri = getBaseURI(node, baseuri, type);
-	if (!baseuri || NFgetPref("z.dontFixRelativeLinks", "bool", false))
+
+	// Get updated baseuri while maintaining URI object structure
+	var updatedBase = getBaseURI(node, base, type);
+	if (!updatedBase || NFgetPref("z.dontFixRelativeLinks", "bool", false))
 	{
-		console.error("fixLinks: Failed to get a valid base URI.", {
+		console.error("fixLinks: Failed to get a valid base URI.",
+		{
 			node: node.nodeName,
-			baseuri: baseuri,
+			baseuri: updatedBase ? updatedBase.spec : updatedBase,
 			type: type
 		});
 		return node;
@@ -569,21 +605,50 @@ function fixLinks(node, baseuri, type)
 		{
 			var kids = node.getElementsByTagNameNS(XHTML,TAG_NAME[i]);
 			for (var j=0; j<kids.length; j++)
+			{
 				if (kids[j].hasAttribute(ATTR_NAME[i]))
 				{
-					// Use global resolveUrl instead of baseuri.resolve for xhtml tags
-					var attrValue = kids[j].getAttribute(ATTR_NAME[i]);
-					var resolvedValue = resolveUrl(attrValue, baseuri);
-					kids[j].setAttribute(ATTR_NAME[i], resolvedValue);
+					try
+					{
+						var attrValue = kids[j].getAttribute(ATTR_NAME[i]);
+						// Use the resolve method if available, otherwise fall back to resolveUrl
+						var resolvedValue = updatedBase.resolve ?
+							updatedBase.resolve(attrValue) :
+							resolveUrl(attrValue, updatedBase.spec || updatedBase);
+						kids[j].setAttribute(ATTR_NAME[i], resolvedValue);
+					}
+					catch (e)
+					{
+						console.error("Error resolving attribute value:", e.message,
+						{
+							attr: ATTR_NAME[i],
+							value: attrValue
+						});
+					}
 				}
+			}
 		}
 	}
 	else if (type <= 1 || nType == "html" || nType == "text/html")
 	{
-		try { var hText = node.textContent; }
-		catch(e) { return node; }  // if node is empty and openInViewPane=true
-		node.textContent = fixRelativeLinks(hText,baseuri);
+		try
+		{
+			var hText = node.textContent;
+			if (!hText) return node;  // if node is empty and openInViewPane=true
+
+			// Pass the proper base URI format to fixRelativeLinks
+			node.textContent = fixRelativeLinks(
+				hText,
+				updatedBase.spec || updatedBase
+			);
+		}
+		catch(e)
+		{
+			console.error("Error in fixLinks text processing:", e.message);
+			return node;
+		}
 	}
+
 	return node;
 }
 
@@ -663,7 +728,8 @@ function fixRelativeLinks(hText, baseuri)
 	// Cache commonly used values
 	const baseuriSpec = typeof baseuri === 'string' ? baseuri : (baseuri?.spec || null);
 
-	if (!baseuriSpec) {
+	if (!baseuriSpec)
+	{
 		console.error("fixRelativeLinks: Invalid or missing baseuri");
 		return hText;
 	}
@@ -674,16 +740,22 @@ function fixRelativeLinks(hText, baseuri)
 	const dataSrcsetRegex = /<img\s+[^>]*?data-srcset\s*=\s*(['"])([^'"]*)\1/gi;
 
 	// Process standard attributes more efficiently
-	for (let i = 0; i < TAG_NAME.length; i++) {
+	for (let i = 0; i < TAG_NAME.length; i++)
+	{
 		const tag = TAG_NAME[i];
 		let attr;
 
 		// Map tags to their primary attributes
-		if (tag === "a" || tag === "area" || tag === "link") {
+		if (tag === "a" || tag === "area" || tag === "link")
+		{
 			attr = "href";
-		} else if (tag === "img" || tag === "source") {
+		}
+		else if (tag === "img" || tag === "source")
+		{
 			attr = "src";
-		} else {
+		}
+		else
+		{
 			continue;
 		}
 
@@ -695,10 +767,13 @@ function fixRelativeLinks(hText, baseuri)
 		hText = hText.replace(regex, (match, quote, url) => {
 			if (url.startsWith("data:")) return match;
 
-			try {
+			try
+			{
 				const resolvedUrl = resolveUrl(url, baseuriSpec);
 				return match.replace(quote + url + quote, quote + resolvedUrl + quote);
-			} catch (e) {
+			}
+			catch (e)
+			{
 				console.error(`Error resolving ${attr} URL:`, e.message,
 							{ tag, attr, url, baseUri: baseuriSpec });
 				return match;
@@ -710,7 +785,8 @@ function fixRelativeLinks(hText, baseuri)
 	const processSrcsetAttribute = (match, quote, srcsetValue) => {
 		if (!srcsetValue) return match;
 
-		try {
+		try
+		{
 			const newSrcset = srcsetValue
 				.split(',')
 				.map(part => {
@@ -721,7 +797,9 @@ function fixRelativeLinks(hText, baseuri)
 				.join(', ');
 
 			return match.replace(quote + srcsetValue + quote, quote + newSrcset + quote);
-		} catch (e) {
+		}
+		catch (e)
+		{
 			console.error("Error resolving srcset URLs:", e.message,
 						 { srcsetValue, baseUri: baseuriSpec });
 			return match;
@@ -1125,6 +1203,10 @@ function transformImageURLs(node, baseuri, type)
 		{
 			pattern: "/images.gog-static.com/",
 			replacement: "/wsrv.nl/?url=https://images.gog-static.com/"
+		},
+		{
+			pattern: "/shared.fastly.steamstatic.com/",
+			replacement: "/wsrv.nl/?url=https://shared.fastly.steamstatic.com/"
 		}
 	];
 
@@ -1359,7 +1441,9 @@ function transformImageURLs(node, baseuri, type)
 function processLazyLoading(node, baseuri)
 {
 	// Skip processing if feature disabled or missing parameters
-	if (!node || !baseuri || !gOptions.processLazyLoading) {
+	if (!node || !baseuri || !gOptions.processLazyLoading)
+	{
+		console.warn("Invalid arguments to processLazyLoading:", {node: !!node, baseuri: !!baseuri});
 		return node;
 	}
 
