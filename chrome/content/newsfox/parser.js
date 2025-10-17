@@ -1088,3 +1088,387 @@ function fixYoutube1(node, baseuri, type)
 		}
 	}
 }
+
+/**
+ * Process lazy-loaded images at display time
+ * This function applies all the lazy loading transformations but only at display time
+ *
+ * @param {Node} node - The DOM node containing content to process
+ * @param {String} baseuri - Base URI for resolving relative paths
+ * @return {Node} - The processed node with lazy loading resolved
+ */
+function processLazyLoading(node, baseuri)
+{
+	// Skip processing if feature disabled or missing parameters
+	if (!node || !baseuri || !gOptions.processLazyLoading) {
+		return node;
+	}
+
+	try {
+		console.debug("processLazyLoading: Processing node type:", node.nodeName, "with baseuri:", baseuri);
+
+		// Define common lazy-loading attribute patterns
+		const lazyPatterns = [
+			{
+				attr: "data-src",
+				replacement: "src"
+			},
+			{
+				attr: "data-srcset",
+				replacement: "srcset"
+			},
+			{
+				attr: "data-lazy",
+				replacement: "src"
+			},
+			{
+				attr: "data-lazy-src",
+				replacement: "src"
+			},
+			{
+				attr: "data-lazy-srcset",
+				replacement: "srcset"
+			},
+			{
+				attr: "lazy-src",
+				replacement: "src"
+			},
+			{
+				attr: "data-original",
+				replacement: "src"
+			},
+			{
+				attr: "data-sizes",
+				replacement: "sizes"
+			},
+			{
+				attr: "data-src-mobile",
+				replacement: "src"
+			},
+			{
+				attr: "data-bg",
+				replacement: "style",
+				transform: value => `background-image: url('${value}')`
+			},
+			{
+				attr: "data-background-image",
+				replacement: "style",
+				transform: value => `background-image: url('${value}')`
+			},
+			{
+				attr: "loading",
+				removal: true  // This attribute will be removed entirely
+			},
+			{
+				attr: "data-lazyloaded",
+				removal: true
+			},
+			{
+				attr: "data-placeholder-resp",
+				removal: true
+			},
+			{
+				attr: "decoding",
+				removal: true
+			},
+			{
+				attr: "fetchpriority",
+				removal: true
+			}
+		];
+
+		// Get node type
+		var nType = node.getAttribute("type");
+
+		// Process based on content type
+		if (nType == "xhtml" || node.namespaceURI === XHTML)
+		{
+			// Get all relevant elements that might have lazy loading
+			var mediaElements = [];
+
+			try {
+				// Find all elements that might have lazy loading attributes
+				var imgElements = node.getElementsByTagName("img");
+				var pictureElements = node.getElementsByTagName("picture");
+				var sourceElements = node.getElementsByTagName("source");
+				var iframeElements = node.getElementsByTagName("iframe");
+				var divElements = node.getElementsByTagName("div");
+
+				// Add all found elements to our collection
+				for (var i = 0; i < imgElements.length; i++) mediaElements.push(imgElements[i]);
+				for (var i = 0; i < pictureElements.length; i++) mediaElements.push(pictureElements[i]);
+				for (var i = 0; i < sourceElements.length; i++) mediaElements.push(sourceElements[i]);
+				for (var i = 0; i < iframeElements.length; i++) mediaElements.push(iframeElements[i]);
+				for (var i = 0; i < divElements.length; i++) mediaElements.push(divElements[i]);
+
+				console.debug("processLazyLoading: Found", mediaElements.length, "potential lazy-loaded elements");
+			} catch (e) {
+				console.error("Error finding media elements:", e.message);
+			}
+
+			// Process each element
+			for (var i = 0; i < mediaElements.length; i++)
+			{
+				var element = mediaElements[i];
+				try
+				{
+					// Check if this is a lazy-loaded image with a placeholder in src
+					var hasDataSrc = element.hasAttribute("data-src") ||
+									 element.hasAttribute("data-lazy-src") ||
+									 element.hasAttribute("lazy-src");
+					var srcIsPlaceholder = false;
+
+					if (hasDataSrc && element.hasAttribute("src"))
+					{
+						var srcValue = element.getAttribute("src");
+						// Improved placeholder detection
+						if (srcValue.startsWith("data:") && srcValue.includes("base64")) {
+							// Estimate the decoded size of the base64 content
+							var contentStart = srcValue.indexOf("base64,") + 7;
+							var base64Content = srcValue.substring(contentStart);
+							// If base64 content is small, it's likely a placeholder
+							srcIsPlaceholder = base64Content.length < 1000;
+						}
+					}
+
+					// Process each lazy loading pattern
+					for (var j = 0; j < lazyPatterns.length; j++)
+					{
+						var pattern = lazyPatterns[j];
+						if (element.hasAttribute(pattern.attr))
+						{
+							if (pattern.removal)
+							{
+								// Remove attributes like 'loading="lazy"'
+								element.removeAttribute(pattern.attr);
+							}
+							else
+							{
+								// Move value from lazy attribute to standard attribute
+								var value = element.getAttribute(pattern.attr);
+								if (value)
+								{
+									// Only replace src if it's a placeholder or we don't have a src attribute
+									if (pattern.replacement === "src" &&
+									   element.hasAttribute("src") &&
+									   !srcIsPlaceholder)
+									{
+										// Keep existing src if it's not a placeholder
+									}
+									else
+									{
+										// Apply any transformation function if provided
+										if (pattern.transform) {
+											value = pattern.transform(value);
+										}
+
+										// Resolve URL if needed for src attributes
+										if ((pattern.replacement === "src" ||
+											 pattern.replacement === "srcset") &&
+											!value.startsWith("data:") &&
+											!value.match(/^(https?|ftp):/i)) {
+											try {
+												value = resolveUrl(value, baseuri);
+											} catch(e) {
+												console.error("Error resolving URL:", e.message);
+											}
+										}
+
+										element.setAttribute(pattern.replacement, value);
+									}
+									element.removeAttribute(pattern.attr);
+								}
+							}
+						}
+					}
+
+					// If src is a placeholder and we have a data-src, replace src with data-src value
+					if (srcIsPlaceholder)
+					{
+						var newSrc = null;
+						// Check multiple data-src attributes in order of preference
+						if (element.hasAttribute("data-src"))
+							newSrc = element.getAttribute("data-src");
+						else if (element.hasAttribute("data-lazy-src"))
+							newSrc = element.getAttribute("data-lazy-src");
+						else if (element.hasAttribute("lazy-src"))
+							newSrc = element.getAttribute("lazy-src");
+
+						if (newSrc) {
+							// Resolve URL if it's relative
+							if (!newSrc.startsWith("data:") && !newSrc.match(/^(https?|ftp):/i)) {
+								try {
+									var resolved = resolveUrl(newSrc, baseuri);
+									if (resolved) {
+										newSrc = resolved;
+									}
+								} catch(e) {
+									console.error("Error resolving lazy-loaded URL:", e.message);
+								}
+							}
+							element.setAttribute("src", newSrc);
+
+							// Remove all data-src variants to avoid confusion
+							element.removeAttribute("data-src");
+							element.removeAttribute("data-lazy-src");
+							element.removeAttribute("lazy-src");
+						}
+					}
+
+					// Remove common lazy-loading classes
+					if (element.hasAttribute("class"))
+					{
+						var classes = element.getAttribute("class").split(" ");
+						var newClasses = [];
+
+						for (var k = 0; k < classes.length; k++) {
+							var cls = classes[k];
+							if (!/lazy|lazyload|lazy-load|lazyloaded/.test(cls)) {
+								newClasses.push(cls);
+							}
+						}
+
+						if (newClasses.length > 0) {
+							element.setAttribute("class", newClasses.join(" "));
+						} else {
+							element.removeAttribute("class");
+						}
+					}
+				}
+				catch (e)
+				{
+					console.error("Error processing element:", e.message, "Element:", element.tagName);
+					// Continue with next element
+				}
+			}
+		}
+		// For HTML string content
+		else if (node.textContent)
+		{
+			try {
+				var hText = node.textContent;
+
+				// Enhanced regex for matching lazy-loaded elements
+				var lazyAttributePattern = 'data-src|data-srcset|data-lazy|data-lazy-src|data-original|data-sizes|data-lazyloaded|data-placeholder-resp|loading=["\'](lazy|auto)["\']|fetchpriority|lazy-src|data-bg|data-background-image';
+				var lazyElementRegex = new RegExp(`<(img|picture|source|iframe|div)[^>]+(${lazyAttributePattern})[^>]*>`, 'gi');
+
+				// Process each matched element
+				hText = hText.replace(lazyElementRegex, function(match) {
+					var modifiedTag = match;
+					console.debug("processLazyLoading: Processing HTML tag:", match.substring(0, 50) + (match.length > 50 ? "..." : ""));
+
+					// Check if this is a lazy-loaded image with a placeholder in src
+					var dataSrcMatch = modifiedTag.match(/data-src\s*=\s*["']([^"']+)["']/i) ||
+									  modifiedTag.match(/data-lazy-src\s*=\s*["']([^"']+)["']/i) ||
+									  modifiedTag.match(/lazy-src\s*=\s*["']([^"']+)["']/i);
+					var srcMatch = modifiedTag.match(/src\s*=\s*["']([^"']+)["']/i);
+
+					var srcIsPlaceholder = false;
+					if (dataSrcMatch && srcMatch) {
+						var srcValue = srcMatch[1];
+						// Improved placeholder detection
+						if (srcValue.startsWith("data:") && srcValue.includes("base64")) {
+							// Estimate the decoded size of the base64 content
+							var contentStart = srcValue.indexOf("base64,") + 7;
+							var base64Content = srcValue.substring(contentStart);
+							// If base64 content is small, it's likely a placeholder
+							srcIsPlaceholder = base64Content.length < 1000;
+						}
+					}
+
+					// Process each lazy loading pattern
+					for (var i = 0; i < lazyPatterns.length; i++) {
+						var pattern = lazyPatterns[i];
+						var attrRegex = new RegExp(`${pattern.attr}\\s*=\\s*["']([^"']+)["']`, 'i');
+						var attrMatch = modifiedTag.match(attrRegex);
+
+						if (attrMatch) {
+							if (pattern.removal) {
+								// Remove the attribute entirely
+								modifiedTag = modifiedTag.replace(attrRegex, '');
+							} else {
+								// Replace lazy attribute with standard one
+								var value = attrMatch[1];
+
+								// Special handling for src attribute
+								if (pattern.replacement === "src" && srcMatch && !srcIsPlaceholder) {
+									// Keep existing src if it's not a placeholder
+									modifiedTag = modifiedTag.replace(attrRegex, '');
+								} else {
+									// Apply any transformation if provided
+									var newValue = value;
+									if (pattern.transform) {
+										newValue = pattern.transform(value);
+									}
+
+									// Resolve URLs for image sources if needed
+									if ((pattern.replacement === "src" || pattern.replacement === "srcset") &&
+										!newValue.startsWith("data:") &&
+										!newValue.match(/^(https?|ftp):/i)) {
+										try {
+											newValue = resolveUrl(newValue, baseuri);
+										} catch(e) {
+											console.error("Error resolving URL in HTML:", e.message);
+										}
+									}
+
+									if (pattern.replacement === "style" && modifiedTag.includes("style=")) {
+										// Append to existing style attribute
+										modifiedTag = modifiedTag.replace(/style\s*=\s*["']([^"']*)["']/i,
+																	  `style="$1; ${newValue}"`);
+									} else {
+										// Set as new attribute
+										modifiedTag = modifiedTag
+											.replace(attrRegex, `${pattern.replacement}="${newValue}"`)
+											.replace(/\s+/g, ' ');
+									}
+								}
+							}
+						}
+					}
+
+					// If src is a placeholder and we have a data-src, replace src with data-src value
+					if (srcIsPlaceholder && dataSrcMatch) {
+						var newSrc = dataSrcMatch[1];
+						// Resolve URL if baseuri is provided and URL is relative
+						if (!newSrc.startsWith("data:") && !newSrc.match(/^(https?|ftp):/i)) {
+							try {
+								newSrc = resolveUrl(newSrc, baseuri);
+							} catch(e) {
+								console.error("Error resolving lazy-loaded URL in HTML:", e.message);
+							}
+						}
+						modifiedTag = modifiedTag.replace(/src\s*=\s*["'][^"']+["']/i, `src="${newSrc}"`);
+					}
+
+					// Remove lazy loading related classes
+					modifiedTag = modifiedTag.replace(/class\s*=\s*["']([^"']+)["']/i, function(classMatch, classes) {
+						var classParts = classes.split(/\s+/);
+						var filteredClasses = [];
+
+						for (var i = 0; i < classParts.length; i++) {
+							if (!/lazy|lazyload|lazy-load|lazyloaded/.test(classParts[i])) {
+								filteredClasses.push(classParts[i]);
+							}
+						}
+
+						return filteredClasses.length > 0 ? `class="${filteredClasses.join(' ')}"` : '';
+					});
+
+					return modifiedTag;
+				});
+
+				node.textContent = hText;
+			} catch (e) {
+				console.error("Error processing HTML lazy loading:", e.message);
+			}
+		}
+
+		console.debug("processLazyLoading: Completed processing");
+		return node;
+	} catch (e) {
+		console.error("Error in processLazyLoading:", e.message, e.stack);
+		// Return original node if processing fails
+		return node;
+	}
+}
