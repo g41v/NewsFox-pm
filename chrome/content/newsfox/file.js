@@ -390,7 +390,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g, "");
 		body2 = emphsrch(body2);
 		if (tag == "p") body2 = linkify(body2, "x");
-		var xmlBody = new DOMParser(null,artURI,null).parseFromString(body2,"text/xml");
+		var xmlBody = new DOMParser(artURI, null).parseFromString(body2,"text/xml");
 		// Atom specification guarantees a single <div> element, now a <span>
 		var xBody = doc.importNode(xmlBody.childNodes[0], true);
 		p.appendChild(xBody);
@@ -404,7 +404,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		if (tag == "p") body2 = linkify(body2, "x");
 		try
 		{
-			var xmlBody = new DOMParser(null,artURI,null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
+			var xmlBody = new DOMParser(artURI, null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
 			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
 		}
@@ -1904,8 +1904,18 @@ function getXbody()
 				// Store a reference to the host for cleanup in callbacks
 				const hostRef = currentHost;
 
+				// Set a timeout for the request
+				const timeoutId = setTimeout(() => {
+					xmlhttp.abort(); // Abort the request
+					console.error(`Request timed out for host: ${hostRef}`);
+					hostsInProcess.delete(hostRef); // Remove host from tracking
+					setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after delay
+					reject(new Error("Request timed out for host: " + hostRef)); // Reject the promise
+				}, gOptions.renewTimeout); // Use the configured timeout value
+
 				xmlhttp.onload = function()
 				{
+					clearTimeout(timeoutId); // Clear the timeout on successful load
 					checkContentType(art, xmlhttp, feed);
 					artTreeInvalidate(); // Update the UI to reflect the successful content fetch
 					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
@@ -1915,6 +1925,7 @@ function getXbody()
 
 				xmlhttp.onerror = function()
 				{
+					clearTimeout(timeoutId); // Clear the timeout on error
 					processError(art, xmlhttp, feed);
 					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
 					setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay

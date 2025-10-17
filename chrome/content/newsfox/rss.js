@@ -769,11 +769,17 @@ function downloadIcon(feed)
 {
 	if (!gOptions.favicons)
 	{
-		for (var i=0; i<gFmodel.size(); i++)
+		for (var i = 0; i < gFmodel.size(); i++)
+		{
 			if (gFmodel.get(i).storage)
+			{
 				gFmodel.get(i).icon.src = ICON_STORAGE;
+			}
 			else
+			{
 				gFmodel.get(i).icon.src = ICON_OK;
+			}
+		}
 	}
 	else
 	{
@@ -782,15 +788,72 @@ function downloadIcon(feed)
 			feed.icon.src = ICON_OK;
 			// don't guessHomepage before feed refreshed, if feed.homepage is null
 			if (gOptions.guessHomepage && feed.homepage == "")
+			{
 				feed.homepage = guessHomepage(feed);
+			}
 			if (feed.homepage != null && feed.homepage != "")
 			{
-				var favicon = feed.homepage.replace("index.html","");
-				if (favicon.charAt(favicon.length-1) != "/") favicon += "/";
+				var favicon = feed.homepage.replace("index.html", "");
+				if (favicon.charAt(favicon.length - 1) != "/")
+				{
+					favicon += "/";
+				}
 				favicon += "favicon.ico";
 				var file = NFgetProfileDir();
 				file.append(feed.uid + ".ico");
-				getFavIcon(favicon,file);
+
+				// Fetch the first 2048 bytes of the site
+				var xhr = new XMLHttpRequest();
+				xhr.open('GET', feed.homepage, true);
+				xhr.setRequestHeader('Range', 'bytes=0-2047');
+				xhr.onload = function()
+				{
+					if (xhr.status === 200)
+					{
+						const html = xhr.responseText;
+						const parser = new DOMParser();
+						const doc = parser.parseFromString(html, 'text/html');
+
+						// Look for a link tag with rel="icon" or rel="shortcut icon"
+						const faviconLink = doc.querySelector('link[rel="icon"], link[rel="shortcut icon"]');
+						const faviconUrl = faviconLink ? faviconLink.href : null;
+
+						if (faviconUrl)
+						{
+							// Validate favicon URL
+							const absoluteFaviconUrl = new URL(faviconUrl, feed.homepage).href; // Ensure faviconUrl is absolute
+
+							// Check if absoluteFaviconUrl is valid before proceeding
+							if (!absoluteFaviconUrl ||
+								absoluteFaviconUrl.startsWith('chrome://') ||
+								absoluteFaviconUrl === '/')
+							{
+								console.error("Invalid absolute favicon URL: " + absoluteFaviconUrl);
+								getFavIcon(favicon, file); // Fallback to default favicon if URL is invalid
+								return; // Exit the function early
+							}
+
+							new URL(absoluteFaviconUrl); // This will throw if the URL is invalid
+							getFavIcon(absoluteFaviconUrl, file);
+						}
+						else
+						{
+							console.error("No favicon URL found, falling back to default.");
+							getFavIcon(favicon, file); // Fallback to default favicon if URL is invalid
+						}
+					}
+					else
+					{
+						console.error(`Failed to fetch favicon from ${feed.homepage}: ${xhr.status} ${xhr.statusText}`);
+						getFavIcon(favicon, file); // Fallback to default favicon if fetch fails
+					}
+				};
+				xhr.onerror = function()
+				{
+					console.error(`Network error while fetching favicon from ${feed.homepage}.`);
+					getFavIcon(favicon, file); // Fallback to default favicon if fetch fails
+				};
+				xhr.send();
 			}
 		}
 	}
@@ -798,6 +861,13 @@ function downloadIcon(feed)
 
 function getFavIcon(favicon,file)
 {
+	// Extended validation checks
+	if (!favicon || (favicon.startsWith('chrome://')) || (favicon == '/'))
+	{
+		console.error("Invalid favicon URL: " + (favicon || 'empty'));
+		return;
+	}
+
 	try
 	{
 		var IOService = Components.classes["@mozilla.org/network/io-service;1"]
@@ -851,9 +921,9 @@ var nfObserver =
 {
 	onDownloadComplete: function(adownloader, arequest, actxt, astatus, aresult)
 	{
-		try 
+		try
 		{
-			if (!aresult || !aresult.leafName) 
+			if (!aresult || !aresult.leafName)
 			{
 				console.error("Downloaded file has no name.");
 				return;
@@ -876,20 +946,20 @@ var nfObserver =
 			if (i == 0) return; // If there are no items, exit
 
 			// Loop through the feed model to find the matching UID
-			for (let index = i - 1; index >= 0; index--) 
+			for (let index = i - 1; index >= 0; index--)
 			{
-				if (gFmodel.get(index).uid == auid) 
+				if (gFmodel.get(index).uid == auid)
 				{
 					// If the downloaded file is an image, update the feed model's icon
-					if (isImg(aresult)) 
+					if (isImg(aresult))
 					{
 						gFmodel.get(index).icon.src = getFileSpec(aresult);
 					}
 					return; // Exit after updating
 				}
 			}
-		} 
-		catch (e) 
+		}
+		catch (e)
 		{
 			console.error("Error in onDownloadComplete:", { e });
 		}

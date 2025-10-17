@@ -58,7 +58,7 @@ const ITEM_AUTHOR = [ "", "author", "author", "author" ];
 const HREF_NAME = [ "url", "url", "href", "href" ];
 
 // Updated to include all tags that need link resolution
-const TAG_NAME = [ "a", "img", "area", "source", "link" ];
+const TAG_NAME = [ "a", "area", "link", "img", "source", "video", "audio", "object", "embed", "script", "iframe", "picture", "svg", "canvas" ];
 const ATTR_NAME = [ "href", "src", "srcset", "data-src", "data-srcset" ];
 
 /**
@@ -1171,7 +1171,7 @@ function fixYoutube1(node, baseuri, type)
 /**
  * Transforms image URLs based on specific patterns, handling all relevant image attributes
  * @param {Node} node - DOM node containing content
- * @param {String} baseuri - Base URI for relative links
+ * @param {String} baseuri - Base URI for resolving relative links
  * @param {Number} type - Content type indicator
  */
 function transformImageURLs(node, baseuri, type)
@@ -1243,62 +1243,23 @@ function transformImageURLs(node, baseuri, type)
 					if (imgElements[i].hasAttribute(attrName))
 					{
 						var attrValue = imgElements[i].getAttribute(attrName);
-					var modified = false;
+						var modified = false;
 
-						// Special handling for srcset which may contain multiple URLs
-						if (attrName === "srcset" || attrName === "data-srcset" || attrName === "data-lazy-srcset")
+						// Check for each URL pattern
+						for (var j = 0; j < urlPatterns.length; j++)
 						{
-							// Split the srcset into individual sources
-							var sources = attrValue.split(',');
-
-							for (var s = 0; s < sources.length; s++)
+							if (attrValue.includes(urlPatterns[j].pattern))
 							{
-								var parts = sources[s].trim().split(' ');
-								var url = parts[0];
-
-								// Apply transformations to URL
-					for (var j = 0; j < urlPatterns.length; j++)
-					{
-									if (url.indexOf(urlPatterns[j].pattern) > -1)
-						{
-										url = url.replace(urlPatterns[j].pattern, urlPatterns[j].replacement);
-							modified = true;
-						}
-					}
-
-					if (modified)
-					{
-									parts[0] = url;
-									sources[s] = parts.join(' ');
-								}
-							}
-
-							// Rejoin the sources
-							if (modified)
-							{
-								imgElements[i].setAttribute(attrName, sources.join(', '));
+								// Replace only the matching part of the URL
+								attrValue = attrValue.replace(urlPatterns[j].pattern, urlPatterns[j].replacement);
+								modified = true;
 							}
 						}
-						else
-						{
-							// Standard handling for other attributes
-							for (var j = 0; j < urlPatterns.length; j++)
-							{
-								if (attrValue.indexOf(urlPatterns[j].pattern) > -1)
-								{
-									attrValue = attrValue.replace(
-										urlPatterns[j].pattern,
-										urlPatterns[j].replacement
-									);
-									modified = true;
-								}
-							}
 
-							// Update the attribute if modified
-							if (modified)
-							{
-								imgElements[i].setAttribute(attrName, attrValue);
-							}
+						// Update the attribute if modified
+						if (modified)
+						{
+							imgElements[i].setAttribute(attrName, attrValue);
 						}
 					}
 				}
@@ -1360,11 +1321,12 @@ function transformImageURLs(node, baseuri, type)
 							{
 								var parts = sources[s].trim().split(' ');
 								var url = parts[0];
+								var descriptor = parts.length > 1 ? parts.slice(1).join(' ') : ''; // Preserve descriptors
 
 								// Apply transformations to URL
 								for (var j = 0; j < urlPatterns.length; j++)
 								{
-									if (url.indexOf(urlPatterns[j].pattern) > -1)
+									if (url.includes(urlPatterns[j].pattern))
 									{
 										url = url.replace(urlPatterns[j].pattern, urlPatterns[j].replacement);
 										attrModified = true;
@@ -1396,7 +1358,7 @@ function transformImageURLs(node, baseuri, type)
 							// Apply transformations
 							for (var j = 0; j < urlPatterns.length; j++)
 							{
-								if (newAttrValue.indexOf(urlPatterns[j].pattern) > -1)
+								if (newAttrValue.includes(urlPatterns[j].pattern))
 								{
 									newAttrValue = newAttrValue.replace(
 										urlPatterns[j].pattern,
