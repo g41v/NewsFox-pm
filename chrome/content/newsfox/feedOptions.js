@@ -315,7 +315,7 @@ function feedChange()
 	var authGroupbox = document.getElementById("authGroupbox");
 
 	if (!urlElement || !authGroupbox) {
-		console.error("feedChange Required elements not found.");
+		console.error("feedChange: Required elements not found." + urlElement, authGroupbox);
 		blurring = false;
 		return;
 	}

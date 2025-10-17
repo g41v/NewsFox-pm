@@ -420,7 +420,7 @@ function fixLinks(node, baseuri,type)
 	baseuri = getBaseURI(node,baseuri,type);
 	if (!baseuri || NFgetPref("z.dontFixRelativeLinks", "bool", false))
 	{
-		console.error("Failed to get a valid base URI.");
+		console.error("fixLinks: Failed to get a valid base URI." + node, baseuri, type);
 		return node;
 	}
 	if (nType == "xhtml")
@@ -489,11 +489,12 @@ function makeTarget_Blank(hText)
 
 function fixRelativeLinks(hText, baseuri)
 {
+	// Extended to handle extra types of links and lazy loadin of images with placeholders
 	// Early return if no text or no baseuri
 	if (!hText || !baseuri)
 	{
-	console.error("Invalid inputs for fixRelativeLinks:", { hText, baseuri });
-	return hText;
+		console.error("fixRelativeLinks: Invalid input", { hText, baseuri });
+		return hText;
 	}
 
 	// Define attribute patterns once
@@ -504,17 +505,22 @@ function fixRelativeLinks(hText, baseuri)
 		{
 			src: /src\s*=\s*(['"])(.*?)\1/i,
 			srcset: /srcset\s*=\s*(['"])(.*?)\1/i,
-			dataSrc: /data-src\s*=\s*(['"])(.*?)\1/i
+			dataSrc: /data-src\s*=\s*(['"])(.*?)\1/i,
+			dataSrcset: /data-srcset\s*=\s*(['"])(.*?)\1/i
 		},
-		area: /href\s*=\s*(['"])(.*?)\1/i
+		area: /href\s*=\s*(['"])(.*?)\1/i,
+		link: /href\s*=\s*(['"])(.*?)\1/i, // For <link> tags
+		fontFace: /url\(\s*(['"]?)(.*?)\1\s*\)/g // For @font-face URLs in CSS
 	};
 
 	// Process each tag type
-	for (const tag of TAG_NAME) {
+	for (const tag of TAG_NAME)
+	{
 		let position = hText.length;
 		const tagPattern = new RegExp(`<${tag}\\s`, 'gi');
 		
-		while (position > -1) {
+		while (position > -1)
+		{
 			// Find the last occurrence of the tag before position
 			const tagMatch = hText.substring(0, position).lastIndexOf(`<${tag} `);
 			if (tagMatch === -1) break;
@@ -528,14 +534,35 @@ function fixRelativeLinks(hText, baseuri)
 			// Get the tag content
 			const tagContent = hText.substring(position, closeTag);
 			
-			if (tag === 'img') {
+			if (tag === 'img')
+			{
 				// Handle multiple attributes for img tags
-				for (const [attrName, pattern] of Object.entries(patterns.img)) {
+				for (const [attrName, pattern] of Object.entries(patterns.img))
+				{
 					const match = pattern.exec(tagContent);
-					if (match) {
+					if (match)
+					{
 						const [fullMatch, quote, url] = match;
-						
-						if (attrName === 'srcset') {
+
+						// Check for lazy loading with data-src or data-srcset
+						if (attrName === 'src')
+						{
+							const dataSrcMatch = patterns.img.dataSrc.exec(tagContent);
+							if (dataSrcMatch)
+							{
+								const [dataSrcFullMatch, dataSrcQuote, dataSrcUrl] = dataSrcMatch;
+								const resolvedDataSrcUrl = baseuri.resolve(dataSrcUrl);
+								if (resolvedDataSrcUrl)
+								{
+									const newAttr = `${match[0].split(url)[0]}${resolvedDataSrcUrl}${quote}`;
+									const startPos = position + tagContent.indexOf(match[0]);
+									hText = hText.substring(0, startPos) + newAttr + 
+										   hText.substring(startPos + fullMatch.length);
+								}
+							}
+						}
+						else if (attrName === 'srcset')
+						{
 							// Handle srcset format: "url1 1x, url2 2x"
 							const sources = url.split(',').map(src => {
 								const [sourceUrl, descriptor] = src.trim().split(/\s+/);
@@ -547,28 +574,41 @@ function fixRelativeLinks(hText, baseuri)
 							const startPos = position + tagContent.indexOf(match[0]);
 							hText = hText.substring(0, startPos) + newAttr + 
 								   hText.substring(startPos + fullMatch.length);
-						} else {
-							// Handle src and data-src normally
-							const resolvedUrl = baseuri.resolve(url);
-							if (resolvedUrl) {
-								const startPos = position + tagContent.indexOf(match[0]);
-								const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
-								hText = hText.substring(0, startPos) + newAttr + 
-									   hText.substring(startPos + fullMatch.length);
-							}
 						}
 					}
 				}
-			} else {
+			}
+			else if (tag === 'link')
+			{
+				// Handle href for <link> tags
+				const match = patterns.link.exec(tagContent);
+				if (match)
+				{
+					const [fullMatch, quote, url] = match;
+					const resolvedUrl = baseuri.resolve(url);
+					
+					if (resolvedUrl)
+					{
+						const startPos = position + tagContent.indexOf(match[0]);
+						const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
+						hText = hText.substring(0, startPos) + newAttr + 
+							   hText.substring(startPos + fullMatch.length);
+					}
+				}
+			}
+			else
+			{
 				// Handle href for a and area tags
 				const pattern = patterns[tag];
 				const match = pattern.exec(tagContent);
 
-				if (match) {
+				if (match)
+				{
 					const [fullMatch, quote, url] = match;
 					const resolvedUrl = baseuri.resolve(url);
 					
-					if (resolvedUrl) {
+					if (resolvedUrl)
+					{
 						const startPos = position + tagContent.indexOf(match[0]);
 						const newAttr = `${match[0].split(url)[0]}${resolvedUrl}${quote}`;
 						hText = hText.substring(0, startPos) + newAttr + 
@@ -580,6 +620,25 @@ function fixRelativeLinks(hText, baseuri)
 			position--;
 		}
 	}
+
+	// Handle @font-face URLs in CSS
+	const fontFaceMatches = hText.match(patterns.fontFace);
+	if (fontFaceMatches)
+	{
+		fontFaceMatches.forEach(match => {
+			const urlMatch = patterns.fontFace.exec(match);
+			if (urlMatch)
+			{
+				const [fullMatch, quote, url] = urlMatch;
+				const resolvedUrl = baseuri.resolve(url);
+				if (resolvedUrl)
+				{
+					hText = hText.replace(fullMatch, `url(${quote}${resolvedUrl}${quote})`);
+				}
+			}
+		});
+	}
+
 	return hText;
 }
 
@@ -942,7 +1001,7 @@ function fixYoutube1(node, baseuri, type)
 			}
 			catch (e)
 			{
-			console.error("Error processing YouTube embed: " + e);
+			console.error("Error processing YouTube embed: " + e.name, e.message, e);
 			}
 			}
 			index--;
