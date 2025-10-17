@@ -122,7 +122,93 @@ var stringTrim = function(v)
 	return v.replace(/^\s+|\s+$/g, '');
 }
 
-/*
+// Add a URL resolution cache
+const resolvedUrlCache = new Map();
+
+/**
+ * Enhanced resolveUrl function with improved validation and error handling
+ * @param {string} url - The relative URL to resolve
+ * @param {string} baseUri - The base URI for resolution
+ * @return {string} - The resolved URL
+ */
+function resolveUrl(url, baseUri) {
+	// Skip processing for empty URLs, data URLs, and absolute URLs
+	if (!url || url === '' || url === '#' || url.startsWith('javascript:') || 
+		url.startsWith('data:') || /^(https?|ftp|file):/i.test(url)) {
+		return url;
+	}
+	
+	// Validate baseUri
+	if (!baseUri || typeof baseUri !== 'string') {
+		console.warn("Invalid baseUri provided for URL resolution:", baseUri);
+		return url;
+	}
+	
+	// Use cache to avoid redundant processing
+	const cacheKey = url + '|' + baseUri;
+	if (resolvedUrlCache.has(cacheKey)) {
+		return resolvedUrlCache.get(cacheKey);
+	}
+	
+	try {
+		// Sanitize URL and baseUri before processing
+		url = sanitizeUrlForResolution(url);
+		baseUri = sanitizeUrlForResolution(baseUri);
+		
+		// Use existing URL resolution logic with better error handling
+		const ios = Components.classes["@mozilla.org/network/io-service;1"]
+				  .getService(Components.interfaces.nsIIOService);
+		
+		// First validate baseUri can be converted to URI
+		let baseUriObj;
+		try {
+			baseUriObj = ios.newURI(baseUri, null, null);
+		} catch (baseError) {
+			console.error("Invalid base URI:", baseUri, baseError.message);
+			return url; // Return original if base is invalid
+		}
+		
+		// Now try to resolve the URL against the base
+		const uri = ios.newURI(url, null, baseUriObj);
+		const resolved = uri.spec;
+		
+		// Cache the result for future use
+		resolvedUrlCache.set(cacheKey, resolved);
+		return resolved;
+	} catch(e) {
+		console.error("URL resolution failed:", e.message, {url, baseUri});
+		return url;  // Return original URL on error
+	}
+}
+
+/**
+ * Sanitizes a URL for safe resolution
+ * @param {string} url - The URL to sanitize
+ * @return {string} - The sanitized URL
+ */
+function sanitizeUrlForResolution(url) {
+	if (!url) return '';
+	
+	// Remove whitespace
+	url = url.trim();
+	
+	// Handle specific problematic URL patterns
+	if (url.includes(' ')) {
+		url = url.replace(/\s+/g, '%20');
+	}
+	
+	// Handle improperly encoded characters that cause URI malformation
+	const problematicChars = /[\[\]{}|\\^<>`]/g;
+	if (problematicChars.test(url)) {
+		url = url.replace(problematicChars, (match) => {
+			return encodeURIComponent(match);
+		});
+	}
+	
+	return url;
+}
+
+/**
  * Get the newsfox directory
  */
 
