@@ -784,6 +784,7 @@ function fixRelativeLinks(hText, baseuri)
 			if (url.startsWith("mailto:")) return match;
 			if (url.startsWith("http://")) return match;
 			if (url.startsWith("https://")) return match;
+			if (url.startsWith("viber://")) return match;
 			if (url.startsWith("javascript:")) return match;
 			// if (url.indexOf('://') < url.indexOf('.')) return match;
 			// console.debug("fixRelativeLinks Single-pass replacement: ", regex, (match, quote, url));
@@ -1218,8 +1219,8 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url=https://items.gog.com/"
 		},
 		{
-			pattern: "/images.gog-static.com/",
-			replacement: "/wsrv.nl/?url=https://images.gog-static.com/"
+			pattern: "/images.gog-statics.com/",
+			replacement: "/wsrv.nl/?url=https://images.gog-statics.com/"
 		},
 		{
 			pattern: "/cdn.cloudflare.steamstatic.com/",

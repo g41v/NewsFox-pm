@@ -364,7 +364,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		if (tag == "p") body2 = linkify(body2, "x");
 
 		// Create a Principal from the artURI
-		var principal = Services.scriptSecurityManager.createContentPrincipal(artURI, {});
+		var principal = Services.scriptSecurityManager.createCodebasePrincipal(artURI, {});
 		var xmlBody = new DOMParser(principal).parseFromString(body2, "text/xml");
 
 		// Atom specification guarantees a single <div> element, now a <span>
@@ -381,7 +381,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		try
 		{
 			// Create a Principal from the artURI
-			var principal = Services.scriptSecurityManager.createContentPrincipal(artURI, {});
+			var principal = Services.scriptSecurityManager.createCodebasePrincipal(artURI, {});
 			var xmlBody = new DOMParser(principal).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
 			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
@@ -2085,7 +2085,9 @@ function processXbody(art, xmlhttp, feed)
 	{
 		if (baseUri)
 		{
+			// console.debug("processXbody before baseUri: ", linkHTML);
 			linkHTML = fixRelativeLinks(linkHTML, baseUri);
+			// console.debug("processXbody after baseUri: ", linkHTML, baseUri);
 		}
 	}
 	catch (e)
@@ -2099,6 +2101,55 @@ function processXbody(art, xmlhttp, feed)
 	{
 		console.error("Failed to create DOM from linkHTML.");
 		return doError(art, new Error("Invalid HTML content"));
+	}
+
+	// Filter out CSS and font files - remove them from DOM before processing
+	if (linkDOM.getElementsByTagName)
+		{
+		try
+		{
+			// Remove CSS link elements
+			var linkElements = linkDOM.getElementsByTagName("link");
+			for (var i = linkElements.length - 1; i >= 0; i--)
+			{
+				var linkElement = linkElements[i];
+				var rel = linkElement.getAttribute("rel");
+				var href = linkElement.getAttribute("href");
+
+				if (rel && (rel.toLowerCase() === "stylesheet" || rel.toLowerCase() === "preload"))
+				{
+					linkElement.parentNode.removeChild(linkElement);
+					// console.debug("Removed stylesheet link: " + href);
+				}
+				else if (href)
+				{
+					var lowerHref = href.toLowerCase();
+					if (lowerHref.includes("fonts.googleapis.com") ||
+						lowerHref.endsWith(".css") ||
+						lowerHref.endsWith(".woff") ||
+						lowerHref.endsWith(".woff2") ||
+						lowerHref.endsWith(".ttf") ||
+						lowerHref.endsWith(".eot") ||
+						lowerHref.endsWith(".otf"))
+					{
+						linkElement.parentNode.removeChild(linkElement);
+						// console.debug("Removed font/CSS resource: " + href);
+					}
+				}
+			}
+
+			// Remove style elements
+			var styleElements = linkDOM.getElementsByTagName("style");
+			for (var i = styleElements.length - 1; i >= 0; i--) {
+				styleElements[i].parentNode.removeChild(styleElements[i]);
+				console.debug("Removed style element: " + href);
+			}
+		}
+		catch (e)
+		{
+			console.error("Error removing CSS/font elements: ", e.message);
+			// Continue processing even if removal fails
+		}
 	}
 
 	// Process base elements and update baseUri
@@ -2195,52 +2246,6 @@ function processXbody(art, xmlhttp, feed)
 	catch (e)
 	{
 		console.error("Error fixing links in DOM:", e.message);
-	}
-
-	// Filter out CSS and font files - remove them from DOM before processing
-	if (linkDOM.getElementsByTagName) {
-		try {
-			// Remove CSS link elements
-			var linkElements = linkDOM.getElementsByTagName("link");
-			for (var i = linkElements.length - 1; i >= 0; i--)
-			{
-				var linkElement = linkElements[i];
-				var rel = linkElement.getAttribute("rel");
-				var href = linkElement.getAttribute("href");
-
-				if (rel && (rel.toLowerCase() === "stylesheet" || rel.toLowerCase() === "preload"))
-				{
-					linkElement.parentNode.removeChild(linkElement);
-					// console.debug("Removed stylesheet link: " + href);
-				}
-				else if (href)
-				{
-					var lowerHref = href.toLowerCase();
-					if (lowerHref.endsWith(".css") ||
-						lowerHref.endsWith(".woff") ||
-						lowerHref.endsWith(".woff2") ||
-						lowerHref.endsWith(".ttf") ||
-						lowerHref.endsWith(".eot") ||
-						lowerHref.endsWith(".otf"))
-					{
-						linkElement.parentNode.removeChild(linkElement);
-						// console.debug("Removed font/CSS resource: " + href);
-					}
-				}
-			}
-
-			// Remove style elements
-			// var styleElements = linkDOM.getElementsByTagName("style");
-			// for (var i = styleElements.length - 1; i >= 0; i--) {
-			//     styleElements[i].parentNode.removeChild(styleElements[i]);
-			//     console.debug("Removed style element: " + href);
-			// }
-		}
-		catch (e)
-		{
-			console.error("Error removing CSS/font elements: ", e.message);
-			// Continue processing even if removal fails
-		}
 	}
 
 	// Process content based on filter type
@@ -2409,7 +2414,7 @@ function processXbody(art, xmlhttp, feed)
 		artText = artText.replace(/<link[^>]*href\s*=\s*["'][^"']*\.(woff|woff2|ttf|eot|otf)["'][^>]*>/gi, "");
 
 		// Remove <style> elements
-		// artText = artText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+		artText = artText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
 	}
 	catch (e)
 	{

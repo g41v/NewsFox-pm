@@ -150,19 +150,20 @@ function resolveUrl(url, baseUri = '')
 		// Early validation for invalid inputs
 		if (!url)
 		{
-			console.warn("Invalid URL provided to resolveUrl:", url, baseUri, new Error().stack);
+			console.warn("Invalid URL provided to resolveUrl:", url, baseUri);
 			return '';
 		}
 
 		// Predefined list of special URL schemes to bypass processing
 		const specialSchemes = [
-			"#",
-			"data:",
-			"mailto:",
-			"ftp://",
-			"sftp://",
-			"http://",
-			"https://",
+			"#", 
+			"data:", 
+			"mailto:", 
+			"ftp://", 
+			"sftp://", 
+			"http://", 
+			"https://", 
+			"viber://", 
 			"javascript:"
 		];
 
