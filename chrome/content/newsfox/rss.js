@@ -141,7 +141,7 @@ function precheckFeed(gFeedsToCheck)
 
 function doXMLHttpRequest(urlFeed,urlSent,username,password,gFeedsToCheck, repeat)
 {
-	// FF used to throw an xmlhhtp error on file not found, but now returns OK
+	// FF used to throw an xmlhttp error on file not found, but now returns OK
 	// from xmlhttp request
 	var httpRenewTimeout = setTimeout(addAnotherCheck, gOptions.renewTimeout);
 	if (urlFeed.substring(0,4) == "file")
@@ -519,14 +519,14 @@ function displayInRefresh(feed,index)
 
 function cleanUpFeed(feed,index)
 {
-		var sortcollect = new NormalCollection(index,0,false);  // index of feed
-		doDefaultSort(sortcollect,false);
-		feed.lastUpdate = new Date();
-		if (gOptions.bookmarkSync) gBookmarkSync.exportB(feed);
-		feed = deleteDuplicates(feed);
-		feed.sortCategories();
-		saveFeed(feed);
-		saveFeedModel();   // keep flags synchronized on disk
+	var sortcollect = new NormalCollection(index,0,false);  // index of feed
+	doDefaultSort(sortcollect,false);
+	feed.lastUpdate = new Date();
+	if (gOptions.bookmarkSync) gBookmarkSync.exportB(feed);
+	feed = deleteDuplicates(feed);
+	feed.sortCategories();
+	saveFeed(feed);
+	saveFeedModel();   // keep flags synchronized on disk
 }
 
 function getArtId()
@@ -748,20 +748,20 @@ function doesArticleExist(feed, item)
 			if (art.title != item.title || art.body != item.body)
 			{
 				feed.set(i,item);
-				if ((feed.changedUnread == 1 || 
-					(feed.changedUnread == 0 && gOptions.changedUnread)) && 
+				if ((feed.changedUnread == 1 ||
+					(feed.changedUnread == 0 && gOptions.changedUnread)) &&
 					(entityDecode(art.body) != entityDecode(item.body)))
 					feed.setRead(i,false);
 			}
 			feed.get(i).toRemove = false;
 			return true;
 		}
-	for (var i=0; i<feed.deletedsize(); i++)
-		if (feed.deletedget(i).id == id)
-		{
-			feed.deletedget(i).toRemove = false;
-			return true;
-		}
+		for (var i=0; i<feed.deletedsize(); i++)
+			if (feed.deletedget(i).id == id)
+				{
+					feed.deletedget(i).toRemove = false;
+					return true;
+				}
 	return false;
 }
 
@@ -843,43 +843,43 @@ function downloadIcon(feed)
 
 						if (faviconLink)
 						{
-						try
-						{
-							// Resolve favicon URL
-							// console.debug("faviconLink before Resolve: ", faviconLink);
-							const href = faviconLink.getAttribute('href') ||
-										 (faviconLink.tagName.toLowerCase() === 'icon' ? faviconLink.textContent.trim() : null);
-							// console.debug("faviconLink after Resolve: ", href);
-
-							if (!href)
+							try
 							{
-								throw new Error("No href found");
+								// Resolve favicon URL
+								// console.debug("faviconLink before Resolve: ", faviconLink);
+								const href = faviconLink.getAttribute('href') || 
+											 (faviconLink.tagName.toLowerCase() === 'icon' ? faviconLink.textContent.trim() : null);
+								// console.debug("faviconLink after Resolve: ", href);
+
+								if (!href)
+								{
+									throw new Error("No href found");
+								}
+
+								// Use resolveUrl function to get absolute URL
+								// const absoluteFaviconUrl = resolveUrl(href.replace("chrome://newsfox", ""), feed.homepage);
+								const absoluteFaviconUrl = resolveUrl(href, feed.homepage);
+								console.debug("absolute favicon URL: ", href, feed.homepage, absoluteFaviconUrl);
+
+								// Validate URL
+								if (!absoluteFaviconUrl || 
+									absoluteFaviconUrl.startsWith('chrome://') || 
+									absoluteFaviconUrl === '/')
+								{
+									throw new Error("Invalid favicon URL");
+								}
+
+								// Additional URL validation
+								new URL(absoluteFaviconUrl); // This will throw if the URL is invalid
+
+								// Download favicon
+								getFavIcon(absoluteFaviconUrl, file);
 							}
-
-							// Use resolveUrl function to get absolute URL
-							// const absoluteFaviconUrl = resolveUrl(href.replace("chrome://newsfox", ""), feed.homepage);
-							const absoluteFaviconUrl = resolveUrl(href, feed.homepage);
-							console.debug("absolute favicon URL: ", href, feed.homepage, absoluteFaviconUrl);
-
-							// Validate URL
-							if (!absoluteFaviconUrl ||
-								absoluteFaviconUrl.startsWith('chrome://') ||
-								absoluteFaviconUrl === '/')
+							catch (error)
 							{
-								throw new Error("Invalid favicon URL");
+								console.error("Favicon URL resolution error:", error);
+								getFavIcon(fallbackFavicon, file); // Fallback to default favicon if URL is invalid
 							}
-
-							// Additional URL validation
-							new URL(absoluteFaviconUrl); // This will throw if the URL is invalid
-
-							// Download favicon
-							getFavIcon(absoluteFaviconUrl, file);
-						}
-						catch (error)
-						{
-							console.error("Favicon URL resolution error:", error);
-							getFavIcon(fallbackFavicon, file); // Fallback to default favicon if URL is invalid
-						}
 						}
 						else
 						{

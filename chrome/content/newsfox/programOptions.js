@@ -279,7 +279,7 @@ function checkDir()
 	if (!nffile.exists())
 	{
 		if (yesNoConfirm(NF_SB.getString('createDir')))
-      nffile.create(nffile.DIRECTORY_TYPE, 0o750);
+		nffile.create(nffile.DIRECTORY_TYPE, 0o750);
 // doesn't work in FF2
 //			nffile.create(nffile.DIRECTORY_TYPE, 0o0750);
 		else

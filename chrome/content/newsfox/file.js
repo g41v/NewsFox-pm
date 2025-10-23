@@ -368,11 +368,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		var body2 = body.replace(/^<xhtml>|<\/xhtml>$/g, "");
 		body2 = emphsrch(body2);
 		if (tag == "p") body2 = linkify(body2, "x");
-
-		// Create a Principal from the artURI
-		var principal = Services.scriptSecurityManager.createCodebasePrincipal(artURI, {});
-		var xmlBody = new DOMParser(principal).parseFromString(body2, "text/xml");
-
+		var xmlBody = new DOMParser(null,artURI,null).parseFromString(body2,"text/xml");
 		// Atom specification guarantees a single <div> element, now a <span>
 		var xBody = doc.importNode(xmlBody.childNodes[0], true);
 		p.appendChild(xBody);
@@ -386,9 +382,7 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 		if (tag == "p") body2 = linkify(body2, "x");
 		try
 		{
-			// Create a Principal from the artURI
-			var principal = Services.scriptSecurityManager.createCodebasePrincipal(artURI, {});
-			var xmlBody = new DOMParser(principal).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
+			var xmlBody = new DOMParser(null,artURI,null).parseFromString(XHTML_TRANS_DOCTYPE + '<span xmlns="' + XHTML + '">' + body2 + "</span>","text/xml");
 			var xBody = doc.importNode(xmlBody.childNodes[1], true);
 			p.appendChild(xBody);
 		}

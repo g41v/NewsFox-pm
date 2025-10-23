@@ -119,7 +119,8 @@ function Parser2(xml, baseUrl)
 		{
 			var item = new Article();
 			// ITEM:BASE
-			var itembase = getBaseURI(items[i], baseuri, type);
+			var itembase = null;
+			itembase = getBaseURI(items[i],baseuri,type);
 			// ITEM:TITLE
 			title = items[i].getElementsByTagNameNS(NS[type], "title");
 			for (var j = 0; j < title.length; j++)
@@ -1207,6 +1208,18 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/"
 		},
 		{
+			pattern: "/i1.wp.com/",
+			replacement: "/"
+		},
+		{
+			pattern: "/i2.wp.com/",
+			replacement: "/"
+		},
+		{
+			pattern: "/i3.wp.com/",
+			replacement: "/"
+		},
+		{
 			pattern: "/m.media-amazon.com/",
 			replacement: "/wsrv.nl/?url=https://m.media-amazon.com/"
 		},
@@ -1237,6 +1250,10 @@ function transformImageURLs(node, baseuri, type)
 		{
 			pattern: "/blogger.googleusercontent.com/img/",
 			replacement: "/wsrv.nl/?url=https://blogger.googleusercontent.com/img/"
+		},
+		{
+			pattern: "/www.gravatar.com/",
+			replacement: "/wsrv.nl/?url=https://www.gravatar.com/"
 		},
 		{
 			pattern: "/secure.gravatar.com/",
