@@ -232,8 +232,8 @@ function resolveUrl(url, baseUri = '')
 		console.error("URL resolution failed:", {
 			url,
 			baseUri,
-			errorMessage: error.message,
-			stack: error.stack
+			errorMessage: e.message,
+			stack: e.stack
 		});
 
 		return null;

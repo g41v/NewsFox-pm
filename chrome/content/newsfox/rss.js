@@ -991,7 +991,8 @@ var nfObserver =
 
 			// Check if the filename has an extension
 			var lastDotIndex = auid.lastIndexOf('.');
-			if (lastDotIndex !== -1) {
+			if (lastDotIndex !== -1)
+			{
 					// Extract the UID by removing the extension
 					auid = auid.substring(0, lastDotIndex);
 			}

@@ -213,6 +213,12 @@ function getTextView(art, feed)
 	var body = art.body;
 	if (art.Xtend && art.Xbody.length > 0) body = art.Xbody;
 
+	// Remove <form> elements
+	body = body.replace(/<\/?form[^>]*?>/gi, "");
+
+	// Remove <input> elements
+	body = body.replace(/<input[^>]*?\/?>/gi, "");
+
 	// Get the content as an XHTML body element
 	var p = getXhtmlBody(body, "p", doc, artURI, feed.getStyle(), tagsToRemove);
 
@@ -221,7 +227,7 @@ function getTextView(art, feed)
 	if (gOptions.processLazyLoading) {
 		try {
 			// Use the most specific baseUri available
-			var baseUriToUse = art.baseUri || (artURI ? artURI.spec : null) || feed.baseUri;
+			var baseUriToUse = art.link;
 
 			if (baseUriToUse) {
 				console.debug("Processing lazy loading in getTextView with baseUri:", baseUriToUse);
@@ -1259,6 +1265,7 @@ function writeDataToFile(data, file, synchro, errorMessage)
 		if (hasNetUtil && !synchro)
 		{
 			var istream = setInputStream(data);
+			// Pale Moon 33.6 compatible NetUtil usage
 			NetUtil.asyncCopy(istream, ostream, function(err)
 			{
 				if (!Components.isSuccessCode(err))
@@ -2106,6 +2113,12 @@ function processXbody(art, xmlhttp, feed)
 
 		// Remove <style> elements
 		linkHTML = linkHTML.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+
+		// Remove <form> elements
+		linkHTML = linkHTML.replace(/<\/?form[^>]*?>/gi, "");
+
+		// Remove <input> elements
+		linkHTML = linkHTML.replace(/<input[^>]*?\/?>/gi, "");
 	}
 	catch (e)
 	{
@@ -2378,12 +2391,15 @@ function processXbody(art, xmlhttp, feed)
 			return content;
 		}
 
-		try {
+		try
+		{
 			var tempNode = document.createElement('div');
 			tempNode.textContent = content;
 			tempNode = processLazyLoading(tempNode, baseUri);
 			return tempNode.textContent;
-		} catch (lazyErr) {
+		}
+		catch (lazyErr)
+		{
 			console.error(`Error processing lazy loading after ${filterType} filter:`, lazyErr.message);
 			return content; // Return original content if processing fails
 		}
@@ -2501,6 +2517,12 @@ function processXbody(art, xmlhttp, feed)
 
 		// Remove <style> elements
 		artText = artText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+
+		// Remove <form> elements
+		artText = artText.replace(/<\/?form[^>]*?>/gi, "");
+
+		// Remove <input> elements
+		artText = artText.replace(/<input[^>]*?\/?>/gi, "");
 	}
 	catch (e)
 	{
@@ -2605,14 +2627,15 @@ function getDataForImage(url, art, artText, imgText, feed)
 {
 	try
 	{
-		// Properly resolve the URL
-		url = resolveUrl(url, art.link);
 		if (!url)
 		{
-			console.warn("Invalid URL after resolution:", url);
+			console.warn("getDataForImage Invalid URL: ", url);
 			art.imagesToGet--;
 			return;
 		}
+
+		// Properly resolve the URL
+		url = resolveUrl(url, art.link);
 
 		var req = new XMLHttpRequest();
 		req.open('GET', url, true);

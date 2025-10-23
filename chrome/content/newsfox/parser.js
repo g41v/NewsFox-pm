@@ -1227,8 +1227,8 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url=https://cdn.cloudflare.steamstatic.com/"
 		},
 		{
-			pattern: "/shared.cloudflare.steamstatic.com/",
-			replacement: "/wsrv.nl/?url=https://shared.cloudflare.steamstatic.com/"
+			pattern: "/i.redd.it/",
+			replacement: "/wsrv.nl/?url=https://i.redd.it/"
 		},
 		{
 			pattern: "/cdn.kobo.com/",
