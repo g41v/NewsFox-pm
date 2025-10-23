@@ -150,7 +150,7 @@ function resolveUrl(url, baseUri = '')
 		// Early validation for invalid inputs
 		if (!url)
 		{
-			console.warn("Invalid URL provided to resolveUrl:", url, baseUri);
+			// console.debug("Invalid URL provided to resolveUrl:", url, baseUri);
 			return '';
 		}
 

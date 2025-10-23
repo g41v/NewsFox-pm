@@ -1239,8 +1239,8 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url=https://blogger.googleusercontent.com/img/"
 		},
 		{
-			pattern: "/secure.gravatar.com/avatar/",
-			replacement: "/wsrv.nl/?url=https://secure.gravatar.com/avatar/"
+			pattern: "/secure.gravatar.com/",
+			replacement: "/wsrv.nl/?url=https://secure.gravatar.com/"
 		}
 	];
 

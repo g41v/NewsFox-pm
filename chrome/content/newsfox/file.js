@@ -2095,6 +2095,23 @@ function processXbody(art, xmlhttp, feed)
 		console.error("Error in pre-DOM URL resolution:", e.message);
 	}
 
+	// Filter out CSS and font related elements from linkHTML using regex
+	try
+	{
+		// Remove <link> elements for stylesheets and fonts
+		linkHTML = linkHTML.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, "");
+		linkHTML = linkHTML.replace(/<link[^>]*rel\s*=\s*["']preload["'][^>]*>/gi, "");
+		linkHTML = linkHTML.replace(/<link[^>]*href\s*=\s*["'][^"']*\.css["'][^>]*>/gi, "");
+		linkHTML = linkHTML.replace(/<link[^>]*href\s*=\s*["'][^"']*\.(woff|woff2|ttf|eot|otf)["'][^>]*>/gi, "");
+
+		// Remove <style> elements
+		linkHTML = linkHTML.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
+	}
+	catch (e)
+	{
+		console.error("Error filtering CSS/font elements from linkHTML:", e.message);
+	}
+
 	var linkDOM = getDomFromHtml(linkHTML);
 	var artText;
 	if (!linkDOM)
@@ -2103,9 +2120,47 @@ function processXbody(art, xmlhttp, feed)
 		return doError(art, new Error("Invalid HTML content"));
 	}
 
+	/*
+	// Function to verify if the expected elements are removed
+	function verifyChanges(linkDOM) {
+		var removedStylesheets = [];
+		var removedFonts = [];
+
+		// Check for remaining link elements
+		var linkElements = linkDOM.getElementsByTagName("link");
+		for (var i = 0; i < linkElements.length; i++) {
+			var rel = linkElements[i].getAttribute("rel");
+			var href = linkElements[i].getAttribute("href");
+
+			if (rel && (rel.toLowerCase() === "stylesheet" || rel.toLowerCase() === "preload")) {
+				removedStylesheets.push(href);
+			} else if (href) {
+				var lowerHref = href.toLowerCase();
+				if (lowerHref.includes("fonts.googleapis.com") ||
+					lowerHref.endsWith(".css") ||
+					lowerHref.endsWith(".woff") ||
+					lowerHref.endsWith(".woff2") ||
+					lowerHref.endsWith(".ttf") ||
+					lowerHref.endsWith(".eot") ||
+					lowerHref.endsWith(".otf")) {
+					removedFonts.push(href);
+				}
+			}
+		}
+
+		// Log the results
+		console.debug("Remaining Stylesheets: ", removedStylesheets);
+		console.debug("Remaining Font Resources: ", removedFonts);
+	}
+
+	// Call the verification function
+	// verifyChanges(linkDOM);
+	*/
+
+	/*
 	// Filter out CSS and font files - remove them from DOM before processing
 	if (linkDOM.getElementsByTagName)
-		{
+	{
 		try
 		{
 			// Remove CSS link elements
@@ -2119,7 +2174,7 @@ function processXbody(art, xmlhttp, feed)
 				if (rel && (rel.toLowerCase() === "stylesheet" || rel.toLowerCase() === "preload"))
 				{
 					linkElement.parentNode.removeChild(linkElement);
-					// console.debug("Removed stylesheet link: " + href);
+					console.debug("Removed stylesheet link: " + linkElement.href);
 				}
 				else if (href)
 				{
@@ -2133,16 +2188,26 @@ function processXbody(art, xmlhttp, feed)
 						lowerHref.endsWith(".otf"))
 					{
 						linkElement.parentNode.removeChild(linkElement);
-						// console.debug("Removed font/CSS resource: " + href);
+						console.debug("Removed font/CSS resource: " + linkElement);
 					}
 				}
 			}
 
 			// Remove style elements
 			var styleElements = linkDOM.getElementsByTagName("style");
-			for (var i = styleElements.length - 1; i >= 0; i--) {
-				styleElements[i].parentNode.removeChild(styleElements[i]);
-				console.debug("Removed style element: " + href);
+
+			console.debug("Total style elements found: " + styleElements.length);
+
+			if (styleElements && styleElements.length > 0)
+			{
+				for (var i = styleElements.length - 1; i >= 0; i--)
+				{
+					if (styleElements[i] && styleElements[i].parentNode)
+					{
+						styleElements[i].parentNode.removeChild(styleElements[i]);
+						console.debug("Removed style element: " + styleElements[i].outerHTML);
+					}
+				}
 			}
 		}
 		catch (e)
@@ -2151,6 +2216,7 @@ function processXbody(art, xmlhttp, feed)
 			// Continue processing even if removal fails
 		}
 	}
+	*/
 
 	// Process base elements and update baseUri
 	try
@@ -2189,10 +2255,13 @@ function processXbody(art, xmlhttp, feed)
 		{
 			// Process href attributes
 			const elementsWithHref = linkDOM.querySelectorAll('[href]');
-			Array.prototype.forEach.call(elementsWithHref, function(el) {
-				if (el && el.getAttribute) {
+			Array.prototype.forEach.call(elementsWithHref, function(el)
+			{
+				if (el && el.getAttribute)
+				{
 					const href = el.getAttribute('href');
-					if (href && !href.match(/^(data:|javascript:|https?:|ftp:|file:)/i)) {
+					if (href && !href.match(/^(data:|javascript:|https?:|ftp:|file:)/i))
+					{
 						el.setAttribute('href', resolveUrl(href, baseUri));
 					}
 				}
@@ -2200,10 +2269,13 @@ function processXbody(art, xmlhttp, feed)
 
 			// Process src attributes
 			const elementsWithSrc = linkDOM.querySelectorAll('[src]');
-			Array.prototype.forEach.call(elementsWithSrc, function(el) {
-				if (el && el.getAttribute) {
+			Array.prototype.forEach.call(elementsWithSrc, function(el)
+			{
+				if (el && el.getAttribute)
+				{
 					const src = el.getAttribute('src');
-					if (src && !src.match(/^(data:|javascript:|https?:|ftp:|file:)/i)) {
+					if (src && !src.match(/^(data:|javascript:|https?:|ftp:|file:)/i))
+					{
 						el.setAttribute('src', resolveUrl(src, baseUri));
 					}
 				}
@@ -2211,10 +2283,13 @@ function processXbody(art, xmlhttp, feed)
 
 			// Process data-src attributes
 			const elementsWithDataSrc = linkDOM.querySelectorAll('[data-src]');
-			Array.prototype.forEach.call(elementsWithDataSrc, function(el) {
-				if (el && el.getAttribute) {
+			Array.prototype.forEach.call(elementsWithDataSrc, function(el)
+			{
+				if (el && el.getAttribute)
+				{
 					const dataSrc = el.getAttribute('data-src');
-					if (dataSrc && !dataSrc.match(/^(data:|javascript:|https?:|ftp:|file:)/i)) {
+					if (dataSrc && !dataSrc.match(/^(data:|javascript:|https?:|ftp:|file:)/i))
+					{
 						el.setAttribute('data-src', resolveUrl(dataSrc, baseUri));
 					}
 				}
@@ -2222,10 +2297,13 @@ function processXbody(art, xmlhttp, feed)
 
 			// Process srcset attributes
 			const elementsWithSrcset = linkDOM.querySelectorAll('[srcset]');
-			Array.prototype.forEach.call(elementsWithSrcset, function(el) {
-				if (el && el.getAttribute) {
+			Array.prototype.forEach.call(elementsWithSrcset, function(el)
+			{
+				if (el && el.getAttribute)
+				{
 					const srcset = el.getAttribute('srcset');
-					if (srcset && !srcset.match(/^(data:|javascript:|https?:|ftp:|file:)/i)) {
+					if (srcset && !srcset.match(/^(data:|javascript:|https?:|ftp:|file:)/i))
+					{
 						el.setAttribute('srcset', resolveUrl(srcset, baseUri));
 					}
 				}
@@ -2233,10 +2311,13 @@ function processXbody(art, xmlhttp, feed)
 
 			// Process data-srcset attributes
 			const elementsWithDataSrcset = linkDOM.querySelectorAll('[data-srcset]');
-			Array.prototype.forEach.call(elementsWithDataSrcset, function(el) {
-				if (el && el.getAttribute) {
+			Array.prototype.forEach.call(elementsWithDataSrcset, function(el)
+			{
+				if (el && el.getAttribute)
+				{
 					const dataSrcset = el.getAttribute('data-srcset');
-					if (dataSrcset && !dataSrcset.match(/^(data:|javascript:|https?:|ftp:|file:)/i)) {
+					if (dataSrcset && !dataSrcset.match(/^(data:|javascript:|https?:|ftp:|file:)/i))
+					{
 						el.setAttribute('data-srcset', resolveUrl(dataSrcset, baseUri));
 					}
 				}
@@ -2247,6 +2328,9 @@ function processXbody(art, xmlhttp, feed)
 	{
 		console.error("Error fixing links in DOM:", e.message);
 	}
+
+	// Extract the updated HTML from linkDOM (Is it Usefull???)
+	linkHTML = new XMLSerializer().serializeToString(linkDOM);
 
 	// Process content based on filter type
 	var Xfilter = feed.Xfilter;
@@ -2288,7 +2372,8 @@ function processXbody(art, xmlhttp, feed)
 	 * @param {string} filterType - The type of filter being processed
 	 * @returns {string} - The processed content
 	 */
-	function processLazyLoadingWithErrorHandling(content, baseUri, filterType) {
+	function processLazyLoadingWithErrorHandling(content, baseUri, filterType)
+	{
 		if (!gOptions.processLazyLoading || !content || !baseUri) {
 			return content;
 		}
@@ -2406,7 +2491,8 @@ function processXbody(art, xmlhttp, feed)
 	}
 
 	// Filter out CSS and font related elements from artText using regex
-	try {
+	try
+	{
 		// Remove <link> elements for stylesheets and fonts
 		artText = artText.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, "");
 		artText = artText.replace(/<link[^>]*rel\s*=\s*["']preload["'][^>]*>/gi, "");
