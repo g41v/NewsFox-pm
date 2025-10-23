@@ -48,10 +48,10 @@ var gCollect = null;
 var numGroupArray = new Array();
 
 // globals just in model.js
-const FOLDER_OPEN  = getPng("folderOpen.png");
-const FOLDER_CLOSED  = getPng("folderClosed.png");
-const FOLDER_SEARCH  = getPng("folderSearch.png");
-const FOLDER_TAG  = getPng("folderTag.png");
+const FOLDER_OPEN = getPng("folderOpen.png");
+const FOLDER_CLOSED = getPng("folderClosed.png");
+const FOLDER_SEARCH = getPng("folderSearch.png");
+const FOLDER_TAG = getPng("folderTag.png");
 const ICON_ERR = getPng("brokenFeed.png");
 const FLAGICON = getPng("flag.png");
 const READICON = getPng("read.png");
@@ -113,41 +113,41 @@ var dragToggling = false;
 
 function FdModel()
 {
-	this.add  = function(feed,isExcluded)
+	this.add = function(feed,isExcluded)
 	{
 		if (isExcluded) 
 			feeds.push(feed);
 		else
 			feeds.splice(gFmodel.size(),0,feed);
 	}
-	this.get  = function(index) { return feeds[index]; }
-	this.set  = function(index, feed)
+	this.get = function(index) { return feeds[index]; }
+	this.set = function(index, feed)
 	{
 		if(index < 0 || index > feeds.length - 1)
 			return;
 		feeds[index] = feed;
 	}
-	this.getIndexByURL  = function(url)
+	this.getIndexByURL = function(url)
 	{
 		for(var i=0; i < feeds.length; i++)
 			if(url == feeds[i].url)
 				return i;
 		return -1;
 	}
-	this.getFeedByURL  = function(url)
+	this.getFeedByURL = function(url)
 	{
 		var nFeed = this.getIndexByURL(url);
 		if (nFeed > -1) return feeds[nFeed];
 		else return null;
 	}
-	this.getIndexByURLnoCase  = function(url)
+	this.getIndexByURLnoCase = function(url)
 	{
 		for(var i=0; i < feeds.length; i++)
 			if(url.toLowerCase() == feeds[i].url.toLowerCase())
 				return i;
 		return -1;
 	}
-	this.getFeedByURLnoCase  = function(url)
+	this.getFeedByURLnoCase = function(url)
 	{
 		var nFeed = this.getIndexByURLnoCase(url);
 		if (nFeed > -1) return feeds[nFeed];
@@ -175,7 +175,7 @@ function FdModel()
 	 */
 	this.makeUniqueUid = function(url)
 	{
-		var index  = url.indexOf("://");
+		var index = url.indexOf("://");
 		var body;
 		if( index > -1 )
 			if (url.charAt(index+3) == "/")  //  file://
@@ -1047,11 +1047,11 @@ function FeedTreeModel()
 
 function Article()
 {
-	this.link  = null;
+	this.link = null;
 	this.title = "";
-	this.body  = "";
-	this.date  = null;
-	this.category  = "";
+	this.body = "";
+	this.date = null;
+	this.category = "";
 	this.tag = "";
 	this.enclosures = new Array();
 	this.id = null;
@@ -1290,7 +1290,7 @@ function ArticleTreeModel()
 			case "title": return getTitleIcon(row);
 			case "Xtend": 
 				return xtenderror ? ERRORICON : 
-		xtend ? (gCollect.get(row).Xbody != "" ? UNREADICON : GETICON) : READICON;
+				xtend ? (gCollect.get(row).Xbody != "" ? UNREADICON : GETICON) : READICON;
 			default: return null;
 		}
 	}
@@ -1663,7 +1663,7 @@ function GroupCollection(grpindex, isSearch)
 		{ artSort(by,dir,items,itemFeed,itemIndex); }
 	this.sortStr = gOptions.sortStrG;
 
-	this.get  = function(index) { return items[index]; }
+	this.get = function(index) { return items[index]; }
 	this.isRead = function(row)
 		{ return gFmodel.get(itemFeed[row]).isRead(itemIndex[row]); }
 	this.setRead = function(row,value)

@@ -334,7 +334,7 @@ function getImgsForTextview()
 	req2.onload = function() { gDefaultTextview = req2.responseText; }
 	req2.send(null);
 // onload works with sync as well so don't need the following
-//  if (!async) gDefaultTextview = req2.responseText;
+//	if (!async) gDefaultTextview = req2.responseText;
 }
 
 function processImgFiles()
@@ -1340,15 +1340,15 @@ function xmlLoad(file, feed)
 		inputStream.init(file, -1, -1, null);
 		var tmp = (new DOMParser()).parseFromStream(inputStream, "utf-8", inputStream.available(), "text/xml");
 		inputStream.close();
-		
+
 	// Firefox started sometimes writing garbage at the end of feed files beginning around FF30
 		var root = tmp.documentElement.localName.toLowerCase();
 		if (root == "parsererror" && feed != null)
-	{
+		{
 			var tmp1 = fileRead(file);
 			var tmp2 = tmp1.lastIndexOf("</newsfox-feed>");
 			if (tmp2 != -1)
-		{
+			{
 				var tmp3 = tmp1.substr(0,tmp2+15) + "\n";
 				tmp = (new DOMParser()).parseFromString(tmp3, "text/xml");
 				feed.readError = true;
@@ -1709,22 +1709,27 @@ function toUTF8(inVal)
 }
 
 // from Sage project
-function entityDecode(aStr) {
- var formatConverter = Components.classes["@mozilla.org/widget/htmlformatconverter;1"].createInstance(Components.interfaces.nsIFormatConverter);
- var fromStr = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
- fromStr.data = aStr;
- var toStr = {value: null};
+function entityDecode(aStr)
+{
+	var formatConverter = Components.classes["@mozilla.org/widget/htmlformatconverter;1"].createInstance(Components.interfaces.nsIFormatConverter);
+	var fromStr = Components.classes["@mozilla.org/supports-string;1"].createInstance(Components.interfaces.nsISupportsString);
+	fromStr.data = aStr;
+	var toStr = {value: null};
 
- try {
-	formatConverter.convert("text/html", fromStr, fromStr.toString().length, "text/unicode", toStr, {});
- } catch(e) {
+	try
+	{
+		formatConverter.convert("text/html", fromStr, fromStr.toString().length, "text/unicode", toStr, {});
+	}
+	catch(e)
+	{
 	return aStr;
- }
- if (toStr.value) {
-	toStr = toStr.value.QueryInterface(Components.interfaces.nsISupportsString);
-	return toStr.toString();
- }
- return aStr;
+	}
+	if (toStr.value)
+	{
+		toStr = toStr.value.QueryInterface(Components.interfaces.nsISupportsString);
+		return toStr.toString();
+	}
+	return aStr;
 }
 
 ////////////////////////////////////////////////////////////////

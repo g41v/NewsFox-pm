@@ -206,10 +206,10 @@ function resolveUrl(url, baseUri = '')
 
 			resolvedUrl = `${uri.scheme}://${uri.host}${url}`;
 		}
-		// Handle regular URLs
+		// Handle regular URLs, including those with './'
 		else
 		{
-			resolvedUrl = new URL(url, baseUri).href;
+			resolvedUrl = new URL(url, baseUri).href; // This should handle './' correctly
 		}
 
 		// Implement cache management
@@ -241,7 +241,7 @@ function resolveUrl(url, baseUri = '')
 }
 
 /**
- * Get the newsfox directory 
+ * Get the newsfox directory
  */
 
 function getProfURL(profURL)
@@ -472,7 +472,7 @@ function displayDate(date, style)
 		}
 		else  // style == 1
 		{
-			var sdf =  Components.classes["@mozilla.org/intl/scriptabledateformat;1"]
+			var sdf = Components.classes["@mozilla.org/intl/scriptabledateformat;1"]
 				.createInstance(Components.interfaces.nsIScriptableDateFormat);
 			return sdf.FormatDateTime("", sdf.dateFormatShort,
 				sdf.timeFormatNoSeconds, date.getFullYear(), date.getMonth()+1,

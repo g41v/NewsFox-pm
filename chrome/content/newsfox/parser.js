@@ -285,7 +285,7 @@ function Parser2(xml, baseUrl)
 	this.parse(xml, type, baseUrl);
 }
 
-function getBaseURI(xml, base, type, feed)
+function getBaseURI(xml, base, type)
 {
 	if (!xml || typeof base === 'undefined')
 	{
@@ -497,7 +497,7 @@ function setTZDate(isoDate)
 		const match = isoDate.match(traditionalFormat);
 
 		if (match)
-	{
+		{
 			// Convert to ISO 8601 format
 			const [_, year, month, day, hour, minute, second, offset] = match;
 			isoDate = `${year}-${month}-${day}T${hour}:${minute}:${second}${offset ? offset.slice(0,3) + ':' + offset.slice(3) : ''}`;
@@ -663,7 +663,6 @@ function fixLinks(node, baseuri, type)
 			return node;
 		}
 	}
-
 	return node;
 }
 
@@ -1785,7 +1784,7 @@ function processLazyLoading(node, baseuri)
 									if (pattern.replacement === "style" && modifiedTag.includes("style=")) {
 										// Append to existing style attribute
 										modifiedTag = modifiedTag.replace(/style\s*=\s*["']([^"']*)["']/i,
-																	  `style="$1; ${newValue}"`);
+																		`style="$1; ${newValue}"`);
 									} else {
 										// Set as new attribute
 										modifiedTag = modifiedTag
@@ -1798,13 +1797,18 @@ function processLazyLoading(node, baseuri)
 					}
 
 					// If src is a placeholder and we have a data-src, replace src with data-src value
-					if (srcIsPlaceholder && dataSrcMatch) {
+					if (srcIsPlaceholder && dataSrcMatch)
+					{
 						var newSrc = dataSrcMatch[1];
 						// Resolve URL if baseuri is provided and URL is relative
-						if (!newSrc.startsWith("data:") && !newSrc.match(/^(https?|ftp):/i)) {
-							try {
+						if (!newSrc.startsWith("data:") && !newSrc.match(/^(https?|ftp):/i))
+						{
+							try
+							{
 								newSrc = resolveUrl(newSrc, baseuri);
-							} catch(e) {
+							}
+							catch(e)
+							{
 								console.error("Error resolving lazy-loaded URL in HTML:", e.message);
 							}
 						}
@@ -1812,12 +1816,15 @@ function processLazyLoading(node, baseuri)
 					}
 
 					// Remove lazy loading related classes
-					modifiedTag = modifiedTag.replace(/class\s*=\s*["']([^"']+)["']/i, function(classMatch, classes) {
+					modifiedTag = modifiedTag.replace(/class\s*=\s*["']([^"']+)["']/i, function(classMatch, classes)
+					{
 						var classParts = classes.split(/\s+/);
 						var filteredClasses = [];
 
-						for (var i = 0; i < classParts.length; i++) {
-							if (!/lazy|lazyload|lazy-load|lazyloaded/.test(classParts[i])) {
+						for (var i = 0; i < classParts.length; i++)
+						{
+							if (!/lazy|lazyload|lazy-load|lazyloaded/.test(classParts[i]))
+							{
 								filteredClasses.push(classParts[i]);
 							}
 						}

@@ -694,7 +694,7 @@ function reportRefreshResults()
 			var strUnread = NF_SB.getString('alert.unread');
 			var message = gNewItemsCount + " " + strNew + ", " + unreadTotalCount + " " + strUnread;
 			var alerts = Components.classes["@mozilla.org/alerts-service;1"]
-														.getService(Components.interfaces.nsIAlertsService);
+						.getService(Components.interfaces.nsIAlertsService);
 			alerts.showAlertNotification("chrome://newsfox/skin/newsfox-32.png", "NewsFox", message, false, "", null);
 		}
 	}
@@ -1153,7 +1153,6 @@ function repairIt(xmlhttp)
 		httpText = httpText.substring(tmp);
 		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
-
 	return xml2; // Return the parsed XML or null if parsing failed
 }
 

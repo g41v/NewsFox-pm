@@ -91,7 +91,7 @@ function expOpml(file,report,doAll)
 			highIndex = lowIndex;
 		}
 
-		var srcTemplate =  '<?xml version="1.0" encoding="UTF-8"?>';
+		var srcTemplate = '<?xml version="1.0" encoding="UTF-8"?>';
 		srcTemplate += "<opml version=\"1.0\">\n";
 		srcTemplate += "<head>\n\t<title>NewsFox OPML Export</title>\n";
 		var currentDate = new Date();

@@ -45,7 +45,7 @@
   <!ENTITY % commonDTD SYSTEM "chrome://newsfox/locale/common.dtd"> %commonDTD;
 ]>
 
-<dialog id="optionsDlg" title="&title;"  
+<dialog id="optionsDlg" title="&title;" 
   xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
   onload="init();"
   ondialogaccept="return doAccept();"
@@ -390,8 +390,8 @@
 				<checkbox id="pOtransformImageURLs" label="&transformImageURLs;"/>
 				<checkbox id="pOprocessLazyLoading" label="&processLazyLoading;"/>
 				<hbox align="left">
-				<label value="&getXbodyDelay;" control="pOgetXbodyDelay"/>
-				<textbox id="pOgetXbodyDelay" maxlength="5" maxwidth="55"/>
+					<label value="&getXbodyDelay;" control="pOgetXbodyDelay"/>
+					<textbox id="pOgetXbodyDelay" maxlength="5" maxwidth="55"/>
 				</hbox>
 				<checkbox id="pOsync" label="&updateTimeToBookmark;"/>
 				<hbox align="center">

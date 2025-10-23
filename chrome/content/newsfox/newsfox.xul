@@ -181,8 +181,7 @@
 			</menu>
 			<menuitem label="&sCmarkAllAsRead;" oncommand="markFlaggedUnread(false,true);"/>
 			<menuitem id="home" label="&sChomePage;" oncommand="home();"/>
-			<menuitem id="home2" label="&OPML.export;"
-					oncommand="exportOpml(false);"/>
+			<menuitem id="home2" label="&OPML.export;" oncommand="exportOpml(false);"/>
 			<menuitem id="openSort" label="&sCopenUnread;" oncommand="openUnread();"/>
 			<menuitem id="openSort2" label="&sortFeeds;" oncommand="AtoZ();"/>
 			<menuitem id="openSort3" label="&unsortFeeds;" oncommand="unsortFeeds();"/>
@@ -210,26 +209,20 @@
 	<!-- Main Toolbar -->
 	<hbox class="heading" context="toolbarContext" id="mainToolbar">
 		<toolbar class="toolbar" pack="start" id="mainToolbarBar">
-			<toolbarbutton command="cmd_checkFeedsauto"
-				tooltiptext="&sCrefresh;" id="tBcheck"/>
-			<toolbarbutton command="cmd_checkFeedsauto"
-				tooltiptext="&sCcancel;" id="tBcancel" hidden="true"/>
-			<toolbarbutton type="menu" tooltiptext="&sCaddGroup;"
-					id="tBaddFolder" command="cmd_addGroup">
+			<toolbarbutton command="cmd_checkFeedsauto" tooltiptext="&sCrefresh;" id="tBcheck"/>
+			<toolbarbutton command="cmd_checkFeedsauto" tooltiptext="&sCcancel;" id="tBcancel" hidden="true"/>
+			<toolbarbutton type="menu" tooltiptext="&sCaddGroup;" id="tBaddFolder" command="cmd_addGroup">
 				<menupopup onpopupshowing="onAddGroupMenuShowing(this);">
 					<menuitem label="&addGroup.regular;" default="true"/>
-					<menuitem label="&addGroup.search;"
-							oncommand="addGroup('search'); event.stopPropagation();"/>
+					<menuitem label="&addGroup.search;" oncommand="addGroup('search'); event.stopPropagation();"/>
 					<menu label="&addGroup.tag;">
 						<menupopup id="aGtag" oncommand="onAddTagGroupSelect(event);"/>
 					</menu>
 				</menupopup>
 			</toolbarbutton>
-			<toolbarbutton command="cmd_deleteGroup"
-				tooltiptext="&sCdeleteGroup;" id="tBdelFolder"/>
+			<toolbarbutton command="cmd_deleteGroup" tooltiptext="&sCdeleteGroup;" id="tBdelFolder"/>
 			<toolbarseparator id="tBsep1"/>
-			<toolbarbutton type="menu" tooltiptext="&sCadd;" id="tBadd"
-						command="cmd_addFeed">
+			<toolbarbutton type="menu" tooltiptext="&sCadd;" id="tBadd" command="cmd_addFeed">
 				<menupopup>
 					<menuitem label="&addFeed.regular;" default="true"/>
 					<menuitem label="&addFeed.storage;"
@@ -297,7 +290,7 @@
 					<menupopup>
 						<menuitem id="mmfBhome" command="cmd_home" label="&sChomePage;"/>
 						<menuitem id="mmfBcheck" command="cmd_checkFeedsslct" label="&sCrefresh;"/>
-						<menuitem id="mmfBtag" command="cmd_tagEdit" label="&tagEdit;" />
+						<menuitem id="mmfBtag" command="cmd_tagEdit" label="&tagEdit;"/>
 						<menuitem id="mmfBmarkAllAsRead" command="cmd_markAllAsRead" label="&sCmarkAllAsRead;"/>
 						<menuitem id="mmfBmarkAllAsUnread" command="cmd_markAllAsUnread" label="&markAllAsUnread;"/>
 						<menuitem id="mmfBdelete" command="cmd_delete" label="&sCdeleteSel;"/>

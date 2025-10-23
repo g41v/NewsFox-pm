@@ -299,7 +299,7 @@ function toggleIcon()
 			document.getElementById("cbiconsrc").src = iconsrc;
 		}
 	}
-	else  // has an icon, change to ICON_OK
+	else // has an icon, change to ICON_OK
 	{
 		document.getElementById("cbiconsrc").src = ICON_OK;
 		if (file.exists()) file.remove(false);
