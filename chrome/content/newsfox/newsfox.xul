@@ -191,11 +191,15 @@
 			<menuitem id="marksel1" label="&sCmarkAllAsRead;" oncommand="markFlaggedUnread(false,true);"/>
 			<menuitem id="marksel2" label="&markSelAsRead;" oncommand="markSelected(true);"/>
 			<menuitem id="marksel3" label="&markSelAsUnread;" oncommand="markSelected(false);"/>
+			<menuitem id="flagSelected" label="Flag Selected" oncommand="flagSelectedArticles();"/>
+			<menuitem id="unflagSelected" label="Unflag Selected" oncommand="unflagSelectedArticles();"/>
 			<menuitem label="&sCnextUnread;" oncommand="selectNextUnreadArticle();"/>
 			<menuitem label="&sCselAll;" oncommand="selectAllArticles();"/>
 			<menuitem label="&tagSel;" oncommand="tagEdit();"/>
 			<menuitem label="&sCopenSel;" oncommand="openArticle();"/>
 			<menuitem label="&sCdeleteSel;" oncommand="deleteArticle();"/>
+			<menuitem id="getxbodySelected" label="Get Extended Body" oncommand="getXbodySelectedArticles();"/>
+			<menuitem id="clearxbodySelected" label="Clear Extended Body" oncommand="clearXbodySelectedArticles();"/>
 		</popup>
 
 		<popup id="toolbarContext">

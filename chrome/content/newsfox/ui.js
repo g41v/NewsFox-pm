@@ -2158,13 +2158,47 @@ function onFeedMenuShowing(menu)
 	return true;
 }
 
+// Flag all selected articles (set star)
+function flagSelectedArticles()
+{
+	var arttree = document.getElementById("newsfox.articleTree");
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (arttree.view.selection.isSelected(i) && !gCollect.isFlagged(i))
+		{
+			gCollect.setFlagged(i, true);
+		}
+	}
+	artTreeInvalidate();
+}
+
+// Unflag all selected articles (clear star)
+function unflagSelectedArticles()
+{
+	var arttree = document.getElementById("newsfox.articleTree");
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (arttree.view.selection.isSelected(i) && gCollect.isFlagged(i))
+		{
+			gCollect.setFlagged(i, false);
+		}
+	}
+	artTreeInvalidate();
+}
+
+// Update context menu to show/hide flag/unflag options based on selection
 function onArtMenuShowing(menu)
 {
 	var arttree = document.getElementById("newsfox.articleTree");
 	var cnt = arttree.view.selection.count;
 	var cnt2 = 0;
-	for (var i=0; i<gCollect.size(); i++)
-		if (arttree.view.selection.isSelected(i) && gCollect.isRead(i)) cnt2++;
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (arttree.view.selection.isSelected(i) && gCollect.isRead(i))
+		{
+			cnt2++;
+		}
+	}
 
 	var children = menu.childNodes;
 	for (var i = 0; i < children.length; i++)
@@ -2172,17 +2206,111 @@ function onArtMenuShowing(menu)
 		var id = children[i].getAttribute("id");
 		switch (id)
 		{
-			case "marksel1":  // mark all read
-				if (cnt <= 1) children[i].removeAttribute("hidden");
-				else children[i].setAttribute("hidden",true);
+			case "marksel1": // mark all read
+				if (cnt <= 1)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
 				break;
-			case "marksel2":  // mark selected read
-				if (cnt > 0 && cnt2 != cnt) children[i].removeAttribute("hidden");
-				else children[i].setAttribute("hidden",true);
+			case "marksel2": // mark selected read
+				if (cnt > 0 && cnt2 != cnt)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
 				break;
-			case "marksel3":  // mark selected unread
-				if (cnt > 0 && cnt2 != 0) children[i].removeAttribute("hidden");
-				else children[i].setAttribute("hidden",true);
+			case "marksel3": // mark selected unread
+				if (cnt > 0 && cnt2 != 0)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
+				break;
+			case "flagSelected": // Show 'Flag Selected' if any selected article is not flagged
+				var showFlag = false;
+				for (var j = 0; j < gCollect.size(); j++)
+				{
+					if (arttree.view.selection.isSelected(j) && !gCollect.isFlagged(j))
+					{
+						showFlag = true;
+						break;
+					}
+				}
+				if (showFlag)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
+				break;
+			case "unflagSelected": // Show 'Unflag Selected' if any selected article is flagged
+				var showUnflag = false;
+				for (var j = 0; j < gCollect.size(); j++)
+				{
+					if (arttree.view.selection.isSelected(j) && gCollect.isFlagged(j))
+					{
+						showUnflag = true;
+						break;
+					}
+				}
+				if (showUnflag)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
+				break;
+			case "getxbodySelected": // Show 'Get Extended Body' if any selected article is not extended
+				var showGetXbody = false;
+				for (var j = 0; j < gCollect.size(); j++)
+				{
+					if (arttree.view.selection.isSelected(j) && (!gCollect.get(j).Xtend || !gCollect.get(j).Xbody))
+					{
+						showGetXbody = true;
+						break;
+					}
+				}
+				if (showGetXbody)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
+				break;
+			case "clearxbodySelected": // Show 'Clear Extended Body' if any selected article is extended
+				var showClearXbody = false;
+				for (var j = 0; j < gCollect.size(); j++)
+				{
+					if (arttree.view.selection.isSelected(j) && (gCollect.get(j).Xtend || gCollect.get(j).Xbody))
+					{
+						showClearXbody = true;
+						break;
+					}
+				}
+				if (showClearXbody)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
 				break;
 		}
 	}
@@ -2564,4 +2692,35 @@ function doSearch()
 	var result = prompts.prompt(null, "", "SEARCH:", input, null, check);
 	if (result) gSearchValue = input.value;
 	else gSearchValue = "";
+}
+
+// Queue getXbody for all selected articles that are not already extended
+function getXbodySelectedArticles()
+{
+	var arttree = document.getElementById("newsfox.articleTree");
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (
+			arttree.view.selection.isSelected(i) &&
+			(!gCollect.get(i).Xtend || !gCollect.get(i).Xbody) // Only queue if not already extended
+		)
+		{
+			getXbodyQueue(gCollect.get(i), gCollect.getFeed(i));
+		}
+	}
+}
+
+// Clear extended body for all selected articles
+function clearXbodySelectedArticles()
+{
+	var arttree = document.getElementById("newsfox.articleTree");
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (arttree.view.selection.isSelected(i))
+		{
+			gCollect.get(i).Xbody = "";
+			gCollect.get(i).Xtend = false;
+		}
+	}
+	artTreeInvalidate();
 }
