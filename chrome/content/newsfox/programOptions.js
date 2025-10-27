@@ -100,7 +100,7 @@ function init()
 	document.getElementById("pOspam").checked = gOpt.spam;
 	document.getElementById("pOtransformImageURLs").checked = gOpt.transformImageURLs;
 	document.getElementById("pOprocessLazyLoading").checked = gOpt.processLazyLoading;
-	document.getElementById("pOgetXbodyDelay").value = gOpt.getXbodyDelay;  // Set the getXbody delay value in the input field
+	document.getElementById("pOgetContentDelay").value = gOpt.getContentDelay;  // Set the getContentDelay value in the input field
 	var pOsync = document.getElementById("pOsync");
 	pOsync.checked = gOpt.bookmarkSync;
 	NFsetUserAgent();
@@ -118,6 +118,38 @@ function init()
 	setSorts(gOpt.sortStr, "sort", "dir");
 	setSorts(gOpt.sortStrG, "sortG", "dirG");
 	updateKeys(keyIndex);
+
+	// Populate Patterns tree from current options
+	try
+	{
+		var patterns = gOpt.urlPatterns || [];
+		if (!patterns || patterns.length === 0)
+		{
+			if (typeof NFgetDefaultUrlPatterns == "function")
+				patterns = NFgetDefaultUrlPatterns();
+		}
+
+		var kids = document.getElementById("PatternsTreeKids");
+		while (kids.firstChild)
+			kids.removeChild(kids.firstChild);
+		for (var i=0; i<patterns.length; i++)
+		{
+			var item = document.createElement("treeitem");
+			var row = document.createElement("treerow");
+			var c1 = document.createElement("treecell");
+			var c2 = document.createElement("treecell");
+			c1.setAttribute("label", patterns[i].pattern || "");
+			c2.setAttribute("label", patterns[i].replacement || "");
+			row.appendChild(c1);
+			row.appendChild(c2);
+			item.appendChild(row);
+			kids.appendChild(item);
+		}
+	}
+	catch(e)
+	{
+		// ignore UI init errors
+	}
 }
 
 function doAccept()
@@ -174,11 +206,33 @@ function doAccept()
 	gOpt.processLazyLoading = document.getElementById("pOprocessLazyLoading").checked;
 
 	// Read the getXbody delay value from the input field
-	val = parseInt(document.getElementById("pOgetXbodyDelay").value); // Convert to integer
+	val = parseInt(document.getElementById("pOgetContentDelay").value); // Convert to integer
 	if ( val < 0 || isNaN(val)) val = 1000;
-	gOpt.getXbodyDelay = val
+	gOpt.getContentDelay = val
 
 	gOpt.bookmarkSync = document.getElementById("pOsync").checked;
+
+	// Read patterns from UI back into gOpt
+	try
+	{
+		var kids = document.getElementById("PatternsTreeKids");
+		var newPatterns = new Array();
+		for (var i=0; i<kids.childNodes.length; i++)
+		{
+			var row = kids.childNodes[i].firstChild;
+			var pat = row.childNodes[0].getAttribute("label");
+			var rep = row.childNodes[1].getAttribute("label");
+			if (pat !== null && pat !== "")
+			{
+				newPatterns.push({ pattern: pat, replacement: rep || "" });
+			}
+		}
+		gOpt.urlPatterns = newPatterns;
+	}
+	catch(e)
+	{
+		// keep previous patterns on error
+	}
 
 	var lenToCheck = Math.min(gOpt.keyword.length,5)-1;
 	for (var i=gOpt.keyword.length; i<5; i++)
@@ -350,6 +404,54 @@ function updateKeys(keyIndex)
 		tmp.appendChild(tmp1);
 		treeKids.appendChild(tmp);
 	}
+}
+
+// Add new pattern via prompt dialogs
+function nfPatAdd()
+{
+	var NF_SB = document.getElementById("newsfox-string-bundle");
+	var pat = prompt("Pattern:", "");
+	if (pat === null) return;
+	var rep = prompt("Replacement:", "");
+	if (rep === null) rep = "";
+	var kids = document.getElementById("PatternsTreeKids");
+	var item = document.createElement("treeitem");
+	var row = document.createElement("treerow");
+	var c1 = document.createElement("treecell");
+	var c2 = document.createElement("treecell");
+	c1.setAttribute("label", pat);
+	c2.setAttribute("label", rep);
+	row.appendChild(c1);
+	row.appendChild(c2);
+	item.appendChild(row);
+	kids.appendChild(item);
+}
+
+// Edit selected pattern
+function nfPatEdit()
+{
+	var tree = document.getElementById("PatternsTree");
+	var rowIdx = tree.currentIndex;
+	if (rowIdx < 0) return;
+	var row = tree.view.getItemAtIndex(rowIdx).firstChild;
+	var curPat = row.childNodes[0].getAttribute("label");
+	var curRep = row.childNodes[1].getAttribute("label");
+	var pat = prompt("Pattern:", curPat || "");
+	if (pat === null) return;
+	var rep = prompt("Replacement:", curRep || "");
+	if (rep === null) rep = "";
+	row.childNodes[0].setAttribute("label", pat);
+	row.childNodes[1].setAttribute("label", rep);
+}
+
+// Remove selected pattern
+function nfPatRemove()
+{
+	var tree = document.getElementById("PatternsTree");
+	var rowIdx = tree.currentIndex;
+	if (rowIdx < 0) return;
+	var kids = document.getElementById("PatternsTreeKids");
+	kids.removeChild(kids.childNodes[rowIdx]);
 }
 
 function treeKeypress(event)

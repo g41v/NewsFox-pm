@@ -81,6 +81,21 @@ function AppOptions()
 		// the setting later and process the addurl before models loaded
 		var file = NFgetProfileDir();
 		this.load();
+		// Populate default URL patterns if enabled and empty on startup
+		try
+		{
+			if (this.transformImageURLs && (!this.urlPatterns || this.urlPatterns.length === 0))
+			{
+				if (typeof NFgetDefaultUrlPatterns == "function")
+				{
+					this.urlPatterns = NFgetDefaultUrlPatterns();
+				}
+			}
+		}
+		catch(e)
+		{
+			// ignore errors populating defaults
+		}
 		this.save(true);
 		this.addObserver();
 		this.loadImages();
@@ -177,7 +192,18 @@ function AppOptions()
 		this.fixyoutube1 = NFgetPref("advanced.fixyoutube1", "bool", true);
 		this.transformImageURLs = NFgetPref("advanced.transformImageURLs", "bool", true);
 		this.processLazyLoading = NFgetPref("advanced.processLazyLoading", "bool", true);
-		this.getXbodyDelay = NFgetPref("advanced.getXbodyDelay", "int", 1000);
+		// Load URL patterns from preferences
+		try
+		{
+			var patternsJson = NFgetPref("advanced.urlPatternsJSON", "str", "");
+			this.urlPatterns = patternsJson ? JSON.parse(patternsJson) : new Array();
+			if (!(this.urlPatterns instanceof Array)) this.urlPatterns = new Array();
+		}
+		catch(e)
+		{
+			this.urlPatterns = new Array();
+		}
+		this.getContentDelay = NFgetPref("advanced.getContentDelay", "int", 1000);
 		this.fixMailto = NFgetPref("advanced.fixMailto", "bool", true);
 		this.defaultXfilterIsWeb = NFgetPref("advanced.defaultXfilterIsWeb", "bool", false);
 		this.linuxNoDragDrop = NFgetPref("advanced.linuxNoDragAndDrop", "bool", true);
@@ -291,8 +317,18 @@ function AppOptions()
 			NFsetPref("advanced.wmodeOpaque", "bool", this.wmode);
 			NFsetPref("advanced.fixyoutube1", "bool", this.fixyoutube1);
 			NFsetPref("advanced.transformImageURLs", "bool", this.transformImageURLs);
-			NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
-			NFsetPref("advanced.getXbodyDelay", "int", this.getXbodyDelay);
+		NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
+		// Save URL patterns to preferences
+		try
+		{
+			var patternsJsonOut = JSON.stringify(this.urlPatterns || new Array());
+			NFsetPref("advanced.urlPatternsJSON", "str", patternsJsonOut);
+		}
+		catch(e)
+		{
+			// ignore
+		}
+			NFsetPref("advanced.getContentDelay", "int", this.getContentDelay);
 			NFsetPref("advanced.fixMailto", "bool", this.fixMailto);
 			NFsetPref("advanced.defaultXfilterIsWeb", "bool", this.defaultXfilterIsWeb);
 			NFsetPref("advanced.linuxNoDragAndDrop", "bool", this.linuxNoDragDrop);

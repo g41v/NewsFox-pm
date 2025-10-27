@@ -1234,7 +1234,7 @@ function showOptions()
 		newKeyIndex = params.newKeyIndex;
 		if (keyIndex != newKeyIndex || newKeyIndex == 3)
 			updateShortcuts(newKeyIndex);
-		gOptions.save(true); // Ensure all changes are persisted, including getXbodyDelay
+		gOptions.save(true); // Ensure all changes are persisted, including getContentDelay
 		prevUri = NFloadCss(gOptions, prevUri);
 		feedTreeInvalidate();  // for changes in keywords
 		artTreeInvalidate();

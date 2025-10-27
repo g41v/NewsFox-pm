@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Write feed url and update times to bookmark">
 <!ENTITY spam "Enable interest filter">
-<!ENTITY transformImageURLs "Transform image URLs">
+<!ENTITY transformImageURLs "Transform image URLs (See Patterns tab)">
 <!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY getContentDelay "Get content delay (in milliseconds):">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Feeds/Articles">
 <!ENTITY generalTab "General">
 <!ENTITY shortcutsTab "Shortcuts">
 <!ENTITY keywordsTab "Keywords">
+<!ENTITY patternsTab "Patterns">
+<!ENTITY add "Add">
+<!ENTITY edit "Edit">
+<!ENTITY remove "Remove">
 <!ENTITY shortcuts.operationHeader "Operation">
 <!ENTITY shortcuts.select "Select a row and type a key combination to set a keystroke.">
 <!ENTITY shortcuts.warning "Many keystrokes are already used and unavailable.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# new">
 <!ENTITY statusBarTextUnread "# unread">
 <!ENTITY statusBarTextNone "none">
+<!ENTITY sCpattern "Pattern:">
+<!ENTITY sCreplacement "Replacement:">

@@ -66,6 +66,7 @@
 			<tab label="&generalTab;"/>
 			<tab label="&shortcutsTab;"/>
 			<tab label="&keywordsTab;"/>
+			<tab label="&patternsTab;"/>
 		</tabs>
 		<tabpanels flex="1">
 			<tabpanel orient="vertical">
@@ -102,6 +103,10 @@
 							<textbox id="pOtimeout" maxlength="3" maxwidth="35"/>
 						</hbox>
 						<label value="&feedSlowdown;"/>
+						<hbox align="left">
+							<label value="&getContentDelay;" control="pOgetContentDelay"/>
+							<textbox id="pOgetContentDelay" maxlength="5" maxwidth="55"/>
+						</hbox>
 					</vbox>
 				</groupbox>
 			</tabpanel>
@@ -389,10 +394,6 @@
 				<checkbox id="pOspam" label="&spam;"/>
 				<checkbox id="pOtransformImageURLs" label="&transformImageURLs;"/>
 				<checkbox id="pOprocessLazyLoading" label="&processLazyLoading;"/>
-				<hbox align="left">
-					<label value="&getXbodyDelay;" control="pOgetXbodyDelay"/>
-					<textbox id="pOgetXbodyDelay" maxlength="5" maxwidth="55"/>
-				</hbox>
 				<checkbox id="pOsync" label="&updateTimeToBookmark;"/>
 				<hbox align="center">
 					<label value="&buttonText;" control="radioStatusBarText"/>
@@ -466,6 +467,22 @@
 					<colorpicker id="color4" color="#008000" type="button"/>
 					<textbox id="keyword4" size="20"/>
 				</hbox>
+			</tabpanel>
+			<tabpanel orient="vertical">
+				<spacer flex="1"/>
+				<hbox align="center" pack="start" style="margin-bottom:6px;">
+					<button id="patAdd" label="&add;" oncommand="nfPatAdd();"/>
+					<button id="patEdit" label="&edit;" oncommand="nfPatEdit();"/>
+					<button id="patRemove" label="&remove;" oncommand="nfPatRemove();"/>
+					<spacer flex="1"/>
+				</hbox>
+				<tree id="PatternsTree" editable="true" height="300" width="300" flex="1" hidecolumnpicker="true">
+					<treecols>
+						<treecol id="pattern" width="20" flex="1" label="&sCpattern;"/>
+						<treecol id="replacement" width="20" flex="2" label="&sCreplacement;"/>
+					</treecols>
+					<treechildren id="PatternsTreeKids"/>
+				</tree>
 			</tabpanel>
 		</tabpanels>
 	</tabbox>

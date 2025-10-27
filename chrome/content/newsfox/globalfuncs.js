@@ -801,19 +801,11 @@ function filterArticle(body)
 	return body; // Return the filtered body
 }
 
-/**
- * Transforms image URLs based on specific patterns, handling all relevant image attributes
- * @param {Node} node - DOM node containing content
- * @param {String} baseuri - Base URI for resolving relative links
- * @param {Number} type - Content type indicator
- */
-function transformImageURLs(node, baseuri, type)
+// Returns default URL transformation patterns used for image URL normalization
+function NFgetDefaultUrlPatterns()
 {
-	// Get node type attribute
-	var nType = node.getAttribute("type");
-
-	// Define URL patterns and their replacements to use across all content types
-	var urlPatterns = [
+	// Default patterns used when user has not customized the list
+	return [
 		{
 			pattern: "/i0.wp.com/",
 			replacement: "/"
@@ -859,8 +851,28 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url=https://cdn.kobo.com/"
 		},
 		{
+			pattern: "/s01.riotpixels.net/",
+			replacement: "/wsrv.nl/?url=https://s01.riotpixels.net/"
+		},
+		{
+			pattern: "/s02.riotpixels.net/",
+			replacement: "/wsrv.nl/?url=https://s02.riotpixels.net/"
+		},
+		{
 			pattern: "/blogger.googleusercontent.com/img/",
 			replacement: "/wsrv.nl/?url=https://blogger.googleusercontent.com/img/"
+		},
+		{
+			pattern: "/1.bp.blogspot.com/",
+			replacement: "/wsrv.nl/?url=https://1.bp.blogspot.com/"
+		},
+		{
+			pattern: "/2.bp.blogspot.com/",
+			replacement: "/wsrv.nl/?url=https://2.bp.blogspot.com/"
+		},
+		{
+			pattern: "/3.bp.blogspot.com/",
+			replacement: "/wsrv.nl/?url=https://3.bp.blogspot.com/"
 		},
 		{
 			pattern: "/www.gravatar.com/",
@@ -879,6 +891,26 @@ function transformImageURLs(node, baseuri, type)
 			replacement: "/wsrv.nl/?url="
 		}
 	];
+}
+
+/**
+ * Transforms image URLs based on specific patterns, handling all relevant image attributes
+ * @param {Node} node - DOM node containing content
+ * @param {String} baseuri - Base URI for resolving relative links
+ * @param {Number} type - Content type indicator
+ */
+function transformImageURLs(node, baseuri, type)
+{
+	// Get node type attribute
+	var nType = node.getAttribute("type");
+
+	// Always use user-defined patterns; never fall back to defaults.
+	// Stop execution if user-defined patterns are missing or empty.
+	if (!(typeof gOptions != "undefined" && gOptions && Array.isArray(gOptions.urlPatterns) && gOptions.urlPatterns.length > 0))
+	{
+		return;
+	}
+	var urlPatterns = gOptions.urlPatterns;
 
 	// Define all image attributes that should be processed
 	const imageAttributes = [
