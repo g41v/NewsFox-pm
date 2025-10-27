@@ -520,6 +520,62 @@ function nfPatRemove()
 	kids.removeChild(kids.childNodes[rowIdx]);
 }
 
+// Move selected pattern one position up
+function nfPatUp()
+{
+	var tree = document.getElementById("PatternsTree");
+	var idx = tree.currentIndex;
+	// Nothing selected or already first item
+	if (idx <= 0) return;
+
+	var kids = document.getElementById("PatternsTreeKids");
+	try
+	{
+		// Swap DOM nodes: move current item before the previous one
+		var item = kids.childNodes[idx];
+		var prev = kids.childNodes[idx - 1];
+		kids.insertBefore(item, prev);
+
+		// Update selection and ensure visibility
+		var newIdx = idx - 1;
+		tree.view.selection.select(newIdx);
+		tree.treeBoxObject.ensureRowIsVisible(newIdx);
+	}
+	catch(e)
+	{
+		// ignore move errors
+	}
+}
+
+// Move selected pattern one position down
+function nfPatDown()
+{
+	var tree = document.getElementById("PatternsTree");
+	var idx = tree.currentIndex;
+	if (idx < 0) return;
+
+	var kids = document.getElementById("PatternsTreeKids");
+	var count = kids.childNodes.length;
+	// Already last item or nothing to move
+	if (idx >= count - 1) return;
+
+	try
+	{
+		// Move next item before current, effectively swapping positions
+		var item = kids.childNodes[idx];
+		var next = kids.childNodes[idx + 1];
+		kids.insertBefore(next, item);
+
+		var newIdx = idx + 1;
+		tree.view.selection.select(newIdx);
+		tree.treeBoxObject.ensureRowIsVisible(newIdx);
+	}
+	catch(e)
+	{
+		// ignore move errors
+	}
+}
+
 function treeKeypress(event)
 {
 	if (event.charCode == 0) return;

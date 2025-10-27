@@ -1867,7 +1867,7 @@ function processXbodyQueue()
 				hostsInProcess.delete(nextHost);
 				activeRequests--;
 				// Continue processing the queue after a configurable delay
-				setTimeout(processXbodyQueue, gOptions.getXbodyDelay);
+				setTimeout(processXbodyQueue, gOptions.getContentDelay);
 			});
 	}
 }

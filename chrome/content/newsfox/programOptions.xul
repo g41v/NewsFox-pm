@@ -474,6 +474,8 @@
 					<button id="patAdd" label="&add;" oncommand="nfPatAdd();"/>
 					<button id="patEdit" label="&edit;" oncommand="nfPatEdit();"/>
 					<button id="patRemove" label="&remove;" oncommand="nfPatRemove();"/>
+					<button id="patUp" label="↑" oncommand="nfPatUp();"/>
+					<button id="patDown" label="↓" oncommand="nfPatDown();"/>
 					<spacer flex="1"/>
 				</hbox>
 				<tree id="PatternsTree" editable="true" height="300" width="300" flex="1" hidecolumnpicker="true">

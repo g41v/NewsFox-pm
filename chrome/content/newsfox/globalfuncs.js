@@ -823,71 +823,75 @@ function NFgetDefaultUrlPatterns()
 			replacement: "/"
 		},
 		{
-			pattern: "/m.media-amazon.com/",
-			replacement: "/wsrv.nl/?url=https://m.media-amazon.com/"
+			pattern: "://m.media-amazon.com/",
+			replacement: "://wsrv.nl/?url=//m.media-amazon.com/"
 		},
 		{
-			pattern: "/images-na.ssl-images-amazon.com/",
-			replacement: "/wsrv.nl/?url=https://images-na.ssl-images-amazon.com/"
+			pattern: "://images-na.ssl-images-amazon.com/",
+			replacement: "://wsrv.nl/?url=//images-na.ssl-images-amazon.com/"
 		},
 		{
-			pattern: "/items.gog.com/",
-			replacement: "/wsrv.nl/?url=https://items.gog.com/"
+			pattern: "://i.ytimg.com/",
+			replacement: "://wsrv.nl/?url=//i.ytimg.com/"
 		},
 		{
-			pattern: "/images.gog-statics.com/",
-			replacement: "/wsrv.nl/?url=https://images.gog-statics.com/"
+			pattern: "://www.youtube.com/img/",
+			replacement: "://wsrv.nl/?url=//www.youtube.com/img/"
 		},
 		{
-			pattern: "/cdn.cloudflare.steamstatic.com/",
-			replacement: "/wsrv.nl/?url=https://cdn.cloudflare.steamstatic.com/"
+			pattern: "://items.gog.com/",
+			replacement: "://wsrv.nl/?url=//items.gog.com/"
 		},
 		{
-			pattern: "/i.redd.it/",
-			replacement: "/wsrv.nl/?url=https://i.redd.it/"
+			pattern: "://images.gog-statics.com/",
+			replacement: "://wsrv.nl/?url=//images.gog-statics.com/"
 		},
 		{
-			pattern: "/cdn.kobo.com/",
-			replacement: "/wsrv.nl/?url=https://cdn.kobo.com/"
+			pattern: "://cdn.cloudflare.steamstatic.com/",
+			replacement: "://wsrv.nl/?url=//cdn.cloudflare.steamstatic.com/"
 		},
 		{
-			pattern: "/s01.riotpixels.net/",
-			replacement: "/wsrv.nl/?url=https://s01.riotpixels.net/"
+			pattern: "://s01.riotpixels.net/",
+			replacement: "://wsrv.nl/?url=//s01.riotpixels.net/"
 		},
 		{
-			pattern: "/s02.riotpixels.net/",
-			replacement: "/wsrv.nl/?url=https://s02.riotpixels.net/"
+			pattern: "://s02.riotpixels.net/",
+			replacement: "://wsrv.nl/?url=//s02.riotpixels.net/"
 		},
 		{
-			pattern: "/blogger.googleusercontent.com/img/",
-			replacement: "/wsrv.nl/?url=https://blogger.googleusercontent.com/img/"
+			pattern: "://blogger.googleusercontent.com/img/",
+			replacement: "://wsrv.nl/?url=//blogger.googleusercontent.com/img/"
 		},
 		{
-			pattern: "/1.bp.blogspot.com/",
-			replacement: "/wsrv.nl/?url=https://1.bp.blogspot.com/"
+			pattern: "://1.bp.blogspot.com/",
+			replacement: "://wsrv.nl/?url=//1.bp.blogspot.com/"
 		},
 		{
-			pattern: "/2.bp.blogspot.com/",
-			replacement: "/wsrv.nl/?url=https://2.bp.blogspot.com/"
+			pattern: "://2.bp.blogspot.com/",
+			replacement: "://wsrv.nl/?url=//2.bp.blogspot.com/"
 		},
 		{
-			pattern: "/3.bp.blogspot.com/",
-			replacement: "/wsrv.nl/?url=https://3.bp.blogspot.com/"
+			pattern: "://3.bp.blogspot.com/",
+			replacement: "://wsrv.nl/?url=//3.bp.blogspot.com/"
 		},
 		{
-			pattern: "/www.gravatar.com/",
-			replacement: "/wsrv.nl/?url=https://www.gravatar.com/"
+			pattern: "://gravatar.com/",
+			replacement: "://wsrv.nl/?url=//gravatar.com/"
 		},
 		{
-			pattern: "/secure.gravatar.com/",
-			replacement: "/wsrv.nl/?url=https://secure.gravatar.com/"
+			pattern: "://www.gravatar.com/",
+			replacement: "://wsrv.nl/?url=//www.gravatar.com/"
 		},
 		{
-			pattern: "//wsrv.nl/?url=https://wsrv.nl/?url=https://wsrv.nl/?url=",
+			pattern: "://secure.gravatar.com/",
+			replacement: "://wsrv.nl/?url=//secure.gravatar.com/"
+		},
+		{
+			pattern: "/wsrv.nl/?url=https://wsrv.nl/?url=https://wsrv.nl/?url=",
 			replacement: "/wsrv.nl/?url="
 		},
 		{
-			pattern: "//wsrv.nl/?url=https://wsrv.nl/?url=",
+			pattern: "/wsrv.nl/?url=https://wsrv.nl/?url=",
 			replacement: "/wsrv.nl/?url="
 		}
 	];
