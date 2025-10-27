@@ -1055,6 +1055,34 @@ function transformImageURLs(node, baseuri, type)
 	}
 }
 
+	/**
+	 * Helper function to process lazy loading with proper error handling
+	 * @param {string} content - The HTML content to process
+	 * @param {string} baseUri - The base URI for resolving URLs
+	 * @param {string} filterType - The type of filter being processed
+	 * @returns {string} - The processed content
+	 */
+	function processLazyLoadingWithErrorHandling(content, baseUri, filterType)
+	{
+		if (!gOptions.processLazyLoading || !content || !baseUri)
+		{
+			return content;
+		}
+
+		try
+		{
+			var tempNode = document.createElement('div');
+			tempNode.textContent = content;
+			tempNode = processLazyLoading(tempNode, baseUri);
+			return tempNode.textContent;
+		}
+		catch (lazyErr)
+		{
+			console.error(`Error processing lazy loading after ${filterType} filter:`, lazyErr.message);
+			return content; // Return original content if processing fails
+		}
+	}
+
 /**
  * Process lazy-loaded images at display time
  * This function applies all the lazy loading transformations but only at display time
@@ -1073,7 +1101,7 @@ function processLazyLoading(node, baseuri)
 	}
 
 	try {
-		// console.debug("processLazyLoading: Processing node type:", node.nodeName, "with baseuri:", baseuri);
+		// console.debug("processLazyLoading: Processing node: ", node.nodeName, "with baseuri:", baseuri);
 
 		// Define common lazy-loading attribute patterns
 		const lazyPatterns = [

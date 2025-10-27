@@ -568,12 +568,12 @@ function fixLinks(node, baseuri, type)
 	{
 		adjustWmode(node, base, type);
 	}
-
+/*
 	if (gOptions.transformImageURLs)
 	{
 		transformImageURLs(node, base, type);
 	}
-
+*/
 	var nType = node.getAttribute("type");
 	if (!gOptions.openInViewPane)
 	{

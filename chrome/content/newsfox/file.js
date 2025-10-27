@@ -232,8 +232,8 @@ function getTextView(art, feed)
 
 			if (baseUriToUse)
 			{
-				console.debug("Processing lazy loading in getTextView with baseUri:", baseUriToUse);
-				processLazyLoading(p, baseUriToUse);
+				console.debug("Processing lazy loading in getTextView with baseUri:", baseUriToUse, feed.XfilterType);
+				processLazyLoadingWithErrorHandling(p, baseUriToUse, feed.XfilterType);
 			}
 			else
 			{
@@ -389,18 +389,28 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 	// Call processLazyLoading
 	if (gOptions.processLazyLoading)
 	{
-		try
+		// Check if content actually needs lazy loading processing
+		const needsLazyLoading = /\b(data-src|data-srcset|lazy-src|data-lazy|data-original|loading=["'](lazy|auto)["'])\s*=/i.test(body);
+
+		if (needsLazyLoading)
 		{
-			var tempNode = document.createElement('div');
-			tempNode.textContent = body; // Convert body to a DOM node
-			processLazyLoading(tempNode, artURI.prePath);
-			console.debug("Processing lazy loading in getXhtmlBody with baseUri:", artURI.prePath);
-			body = tempNode.textContent; // Update the body after processLazyLoading
+			try
+			{
+				var tempNode = document.createElement('div');
+				tempNode.textContent = body; // Convert body to a DOM node
+				processLazyLoading(tempNode, artURI.prePath);
+				// console.debug("getXhtmlBody: Processing lazy loading with baseUri:", artURI.prePath);
+				body = tempNode.textContent; // Update the body after processLazyLoading
+			}
+			catch (e)
+			{
+				console.error("getXhtmlBody: Error processing lazy loading: ", e.message, e.stack, e);
+				// Continue with display even if lazy loading processing fails
+			}
 		}
-		catch (e)
+		else
 		{
-			console.error("Error processing lazy loading in getTextView:", e.message, e.stack, e);
-			// Continue with display even if lazy loading processing fails
+			// console.debug("getXhtmlBody: No lazy loading attributes found, skipping processing");
 		}
 	}
 
@@ -2365,33 +2375,6 @@ function processXbody(art, xmlhttp, feed)
 	var filterType = feed.XfilterType;
 	if (Xfilter && filterType == -1) filterType = guessFilterType(Xfilter);
 
-	/**
-	 * Helper function to process lazy loading with proper error handling
-	 * @param {string} content - The HTML content to process
-	 * @param {string} baseUri - The base URI for resolving URLs
-	 * @param {string} filterType - The type of filter being processed
-	 * @returns {string} - The processed content
-	 */
-	function processLazyLoadingWithErrorHandling(content, baseUri, filterType)
-	{
-		if (!gOptions.processLazyLoading || !content || !baseUri) {
-			return content;
-		}
-
-		try
-		{
-			var tempNode = document.createElement('div');
-			tempNode.textContent = content;
-			tempNode = processLazyLoading(tempNode, baseUri);
-			return tempNode.textContent;
-		}
-		catch (lazyErr)
-		{
-			console.error(`Error processing lazy loading after ${filterType} filter:`, lazyErr.message);
-			return content; // Return original content if processing fails
-		}
-	}
-
 	// Handle different filter types
 	if (filterType <= 0)  // none or RegExp
 	{
@@ -2520,15 +2503,15 @@ function processXbody(art, xmlhttp, feed)
 	// This ensures we handle all lazy-loaded content in one place
 	try
 	{
-		if (gOptions.processLazyLoading && baseUri && artText)
+		if (gOptions.processLazyLoading)
 		{
 			// Check if content actually needs lazy loading processing
 			const needsLazyLoading = /\b(data-src|data-srcset|lazy-src|data-lazy|data-original|loading=["'](lazy|auto)["'])\s*=/i.test(artText);
 
 			if (needsLazyLoading)
 			{
-				// console.debug("Processing lazy loading for filter type:", filterType);
-				artText = processLazyLoadingWithErrorHandling(artText, baseUri, `filter-${filterType}`);
+				// console.debug("Processing lazy loading for filter type:", filterType, `filter-${filterType}`);
+				artText = processLazyLoadingWithErrorHandling(artText, baseUri, feed.XfilterType);
 			}
 			else
 			{
