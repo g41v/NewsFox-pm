@@ -41,30 +41,51 @@
 ////////////////////////////////////////////////////////////////
 
 // shared with rss.js
+// Timer for periodic auto-refresh scheduling
 var gAutoRefreshTimer = null;
+// True while a feed check is running; drives UI toggles/cancellation
 var gCheckInProgress = false;
+// Queue of feed URLs to check for updates
 var gFeedsToCheck = new Array();
+// Whether to render an article upon selection (false when multi-select)
 var gDisplayArticle = true;
+// Timeout id for staged feed loading during startup
 var gLoadingTimeout;
+// Bookmark synchronization helper (created on startup when enabled)
 var gBookmarkSync;
 
 // ui.js only
+// Default URL used when adding a feed via external triggers
 var defaultURL = "";
+// First-run guard for staged loading
 var firstLoad = true;
+// Index for sequential feed loading at startup
 var loadIndex;
+// One-time initialization guard for the UI
 var initNewsfox = false;
+// One-time cleanup guard on unload
 var clean = false;
+// Debounce timer for delayed actions on feed selection
 var feedSelectTimeout;
+// Throttled extra invalidation to smooth UI updates after heavy changes
 var gExtraInvalidateTimer;
+// Delay (ms) for the extra invalidate pass
 const gExtraInvalidateValue = 400;
+// Stack of recently-displayed articles for quick navigation
 var pastArticles = new Array();
+// Temporary ordering array for tag menus
 var orderArray;
+// Previously applied CSS URI to allow safe reloading
 var prevUri;
 
 ////////////////////////////////////////////////////////////////
 // Lifecycle
 ////////////////////////////////////////////////////////////////
 
+/**
+ * Initialize NewsFox UI lifecycle and models, set user agent and options,
+ * apply CSS, load feeds, and schedule initial operations.
+ */
 function startup()
 {
 	// This method was getting called twice, not sure why
@@ -105,6 +126,9 @@ function startup()
 //  feedTreeInvalidate();   // for keywords to show, but articles not loaded yet anyway
 }
 
+/**
+ * Persist models (feeds, groups, indices) to disk.
+ */
 function saveModels()
 {
 	saveFeedModel();
@@ -112,6 +136,9 @@ function saveModels()
 	saveIndices();
 }
 
+/**
+ * Reload feed/group/indices models from disk and refresh the feed tree view.
+ */
 function refreshModel()
 {
 	loadFeedModel();
@@ -121,6 +148,11 @@ function refreshModel()
 	tree.view = new FeedTreeModel();
 }
 
+/**
+ * Refresh model and keep viewport position, then select and reveal a row.
+ *
+ * @param {number} index - Row index to select and reveal.
+ */
 function refreshModelSelect(index)
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -131,6 +163,9 @@ function refreshModelSelect(index)
 	feedtree.treeBoxObject.ensureRowIsVisible(index);
 }
 
+/**
+ * Handle window unload: write pending data, stop timers, and persist state.
+ */
 function cleanup()
 {
 	if (!initNewsfox) return;
@@ -152,6 +187,9 @@ function cleanup()
 	clean = true;
 }
 
+/**
+ * Reduce/normalize spam filter data arrays to maintain bounded size and values.
+ */
 function spamCleanup()
 {
 	var sorter = function(a,b)
@@ -198,11 +236,22 @@ function spamCleanup()
 	}
 }
 
+/**
+ * Check if the model is corrupt or partially loaded.
+ *
+ * @returns {boolean} True if corrupt, otherwise false.
+ */
 function modelCorrupt()
 {
 	return (gLoadFlags > 0 || gIdx.fdgp.length == 0 || gFdGroup.length == 0);
 }
 
+/**
+ * Load feed/group/indices models. Optionally retry by resetting to backups
+ * when corruption is detected.
+ *
+ * @param {boolean} keepTrying - Whether to reset models on first-run errors.
+ */
 function loadModels(keepTrying)
 {
 	const NF_SB = document.getElementById("newsfox-string-bundle");
@@ -257,6 +306,12 @@ function loadModels(keepTrying)
 	loadFilterData();
 }
 
+/**
+ * Restore XML model file from backup if present.
+ *
+ * @param {string} leafName - Base filename (without extension).
+ * @returns {boolean} True when a backup was restored.
+ */
 function doReset(leafName)
 {
 	var bakExists = false;
@@ -273,6 +328,9 @@ function doReset(leafName)
 	return bakExists;
 }
 
+/**
+ * Schedule loading of all feeds on first run after startup.
+ */
 function loadAllFeeds()
 {
 	if (!firstLoad) return;
@@ -282,6 +340,9 @@ function loadAllFeeds()
 	gLoadingTimeout = setTimeout(loadAFeed,50);
 }
 
+/**
+ * Load feeds one by one with a short delay to keep UI responsive.
+ */
 function loadAFeed()
 {
 	if (loadIndex < 0)
@@ -300,16 +361,34 @@ function loadAFeed()
 // Commands
 ////////////////////////////////////////////////////////////////
 
+/**
+ * Toggle between starting a feed check and canceling an ongoing one.
+ */
 function doCheckCancel()
 {
 	if (gCheckInProgress) cancelTheCheck();
 	else feedCheck(true);
 }
 
-function doCancelCheckFeeds() { if (gCheckInProgress) cancelTheCheck(); }
+/**
+ * Cancel ongoing feed check if it is currently in progress.
+ */
+function doCancelCheckFeeds()
+{
+	if (gCheckInProgress)
+		cancelTheCheck();
+}
 
 /**
  * Check feeds for new items.
+ *
+ * Behavior depends on current selection:
+ * - Group: queue all feeds in the group
+ * - Category: select the feed, open it, then queue that feed
+ * - Feed: queue the feed
+ * - None or toolbar button: queue all auto-check feeds
+ *
+ * @param {boolean} button - True if triggered by toolbar/menu button.
  */
 function feedCheck(button)
 {
@@ -352,6 +431,10 @@ function feedCheck(button)
 	setupFeedCheck(gFeedsToCheck,true);
 }
 
+/**
+ * Prepare UI and internal state for a feed check operation.
+ * Shows busy indicators and updates toolbar/menu visibility.
+ */
 function setUpCheck()
 {
 	gCheckInProgress = true;
@@ -369,7 +452,8 @@ function setUpCheck()
 }
 
 /**
- * Auto check feeds.
+ * Auto check feeds according to per-feed or global auto-refresh intervals.
+ * Reschedules itself based on `gOptions.autoRefreshTime`.
  */
 function checkFeeds()
 {
@@ -381,6 +465,10 @@ function checkFeeds()
 	feedCheck(true);
 }
 
+/**
+ * Periodic auto-check scheduler that evaluates each feed's elapsed time
+ * versus its refresh interval and queues overdue feeds for checking.
+ */
 function checkAutoFeeds()
 {
 	if (gCheckInProgress)
@@ -406,7 +494,9 @@ function checkAutoFeeds()
 }
 
 /**
- * Add a new group.
+ * Create a new group, optionally a search/tag group, and insert into the tree.
+ *
+ * @param {string} type - One of "regular" | "search" | "tag" | "startup".
  */
 function addGroup(type)
 {
@@ -431,12 +521,23 @@ function addGroup(type)
 	}
 }
 
+/**
+ * Convenience: create a tag group and then update it with a selected tag index.
+ *
+ * @param {number} index - Index within the tag list.
+ */
 function addTagGroup(index)
 {
 	addGroup("tag");
 	updateTagGroup(index);
 }
 
+/**
+ * Update the current tag group to the chosen tag, prompting for a new tag
+ * when index refers to the synthetic "new tag" item.
+ *
+ * @param {number} index - Tag index or the special trailing index for new tag.
+ */
 function updateTagGroup(index)
 {
 	var tags;
@@ -479,7 +580,9 @@ function updateTagGroup(index)
 }
 
 /**
- * Delete a group.
+ * Delete the currently selected group.
+ *
+ * @param {boolean} confirm - If true, prompt the user before deleting.
  */
 function deleteGroup(confirm)
 {
@@ -511,7 +614,10 @@ function deleteGroup(confirm)
 }
 
 /**
- * Add a new feed.
+ * Add a new feed, optionally as storage-only or on startup; opens options
+ * dialog unless started with type "startup".
+ *
+ * @param {string} type - One of "regular" | "startup" | "storage".
  */
 function addFeed(type)
 {
@@ -556,6 +662,9 @@ function addFeed(type)
 	}
 }
 
+/**
+ * Add a feed from `gOptions.addUrl`, used on startup/integration entry points.
+ */
 function addFeedUrl()
 {
 	var isStartup = false;
@@ -570,6 +679,10 @@ function addFeedUrl()
 	defaultURL = "";
 }
 
+/**
+ * Delete the selected row: deletes the feed if a feed is selected, or
+ * deletes the group if a group is selected.
+ */
 function deleteRow()
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -579,6 +692,9 @@ function deleteRow()
 	else if (level == 0) deleteGroup(true);
 }
 
+/**
+ * Delete a feed within its group while keeping selection stable.
+ */
 function deleteSingleFeedRow()
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -609,7 +725,10 @@ function deleteSingleFeedRow()
 }
 
 /**
- * Permanently delete a feed.
+ * Permanently delete a feed and remove its entries from all groups.
+ *
+ * @param {number} index - Tree row index for the feed; if -1 uses current.
+ * @param {boolean} confirm - Whether to prompt before deleting.
  */
 function deleteFeed(index,confirm)
 {
@@ -669,7 +788,8 @@ function deleteFeed(index,confirm)
 }
 
 /**
- * Delete articles.
+ * Delete selected articles. For non-storage feeds, move to deleted list first
+ * (enables undelete and sync). Updates views and unread counts.
  */
 function deleteArticle()
 {
@@ -743,6 +863,12 @@ function deleteArticle()
 	}
 }
 
+/**
+ * Persist changed feeds back to disk. If `doAll` is true or a group view is
+ * active, iterates the relevant feeds; otherwise saves the current feed only.
+ *
+ * @param {boolean} doAll - Save all feeds in the current context.
+ */
 function updateFeeds(doAll)
 {
 	if (doAll || isGroup())
@@ -765,6 +891,11 @@ function updateFeeds(doAll)
 	saveFeedModel();
 }
 
+/**
+ * Save a feed and mark it as unloaded and unchanged in memory.
+ *
+ * @param {Feed} feed - The feed model to save and unload.
+ */
 function saveFeedUnload(feed)
 {
 	saveFeed(feed);
@@ -772,6 +903,9 @@ function saveFeedUnload(feed)
 	feed.changed = false;
 }
 
+/**
+ * Open all selected articles in new tabs using their link URLs.
+ */
 function openArticle()
 {
 		var arttree = document.getElementById("newsfox.articleTree");
@@ -780,6 +914,9 @@ function openArticle()
 				openNewTab(gCollect.get(i).link);
 }
 
+/**
+ * Select all rows in the article tree.
+ */
 function selectAllArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
@@ -807,6 +944,7 @@ function tagEdit()
 		var tag = "\/" + allArray[i] + "\/";
 		var tagLn = tag.length;
 		var allLn = allTag.length;
+		// Replace occurrences to compute percentage coverage of each tag
 		allTag = allTag.replace(new RegExp(tag,'g'),"\/\/");
 		var newLn = allTag.length;
 		allPct[i] = (allLn-newLn)/(allNum*(tagLn-2));
@@ -821,6 +959,7 @@ function tagEdit()
 		var addTags = mergeCats(params.addstr,params.newaddstr,null);
 		var rmTags = params.rmstr;
 		var delTags = params.delstr;
+		// Apply updates across the selection
 		tagSelected(addTags, rmTags, delTags);
 	}
 }
@@ -845,6 +984,7 @@ function tagSelected(addTags, rmTags, delTags)
 			for (j=0; j<feed.size(); j++)
 				feed.get(j).tag = mergeCats(feed.get(j).tag,null,delTags)
 		}
+		// Save across all feeds when global tag deletion occurs
 		updateFeeds(true);
 	}
 	else
@@ -871,7 +1011,8 @@ function tagSelected(addTags, rmTags, delTags)
 		if (didDelete) feedtree.view.selection.select(index);
 	}
 	feedTreeInvalidate();
-	articleSelected();  // need new article
+	// Selecting a new article ensures the view reflects updated tags
+	articleSelected();
 	if (gCollect.type == 4)
 	{
 		var index = feedtree.currentIndex;
@@ -893,12 +1034,20 @@ function markSelected(read)
 	setTitle(false);
 }
 
+/**
+ * Mark selected articles flagged or read/unread depending on parameters.
+ * If marking as read and spam filtering is enabled, queue items for update.
+ *
+ * @param {boolean} doflag - If true, toggle flagged state and clear flags.
+ * @param {boolean} read - If true, mark selected as read; otherwise leave.
+ */
 function markFlaggedUnread(doflag,read)
 {
 	for(var i=0; i < gCollect.size(); i++)
 	{
 		var article = gCollect.get(i);
 		var artread = gCollect.isRead(i);
+		// Queue articles for spam model update if they are newly marked read
 		if (!artread && read && gOptions.spam)
 			gArtsToUpdateSpam.push(article);
 		var flagged = gCollect.isFlagged(i);
@@ -914,6 +1063,9 @@ function markFlaggedUnread(doflag,read)
 	if (gArtsToUpdateSpam.length > 0) setTimeout(doUpdateSpam, 50);
 }
 
+/**
+ * Open all unread articles in new tabs and mark them read.
+ */
 function openUnread()
 {
 	var feedTree = document.getElementById("newsfox.feedTree");
@@ -934,20 +1086,32 @@ function openUnread()
 	artTreeInvalidate();
 }
 
+/**
+ * Process the next pending spam update item; self-schedules until empty.
+ */
 function doUpdateSpam()
 {
 	if (gArtsToUpdateSpam.length == 0) return;
 	var art = gArtsToUpdateSpam.shift();
 	spamFilterUpdate(art,false,false);
+	// Continue processing remaining updates in small chunks to keep UI responsive
 	setTimeout(doUpdateSpam, 50);
 }
 
+/**
+ * Update spam filter word counts for an article, adjusting good/total stats.
+ *
+ * @param {Object} art - Article object with title/body used for tokens.
+ * @param {boolean} read - Whether article was marked as read.
+ * @param {boolean} isGood - Whether the action indicates a good example.
+ */
 function spamFilterUpdate(art, read, isGood)
 {
 	var titleArray = getTitleArray(art);
 	var j= gWordArray.length - 1;
 	for (var i=titleArray.length-1; i>=0; i--)
 	{
+		// Binary search to find matching word in sorted array
 		while (gWordArray[j] > titleArray[i] && j>=0) j--;
 		if (gWordArray[j] == titleArray[i])
 		{
@@ -955,34 +1119,51 @@ function spamFilterUpdate(art, read, isGood)
 			{
 				gGoodArray[j] += S_TOTAL_START - S_GOOD_START;
 				if (read) gTotalArray[j] += S_TOTAL_START - S_GOOD_START;
+				// Ensure total count is never less than good count
 				if (gGoodArray[j] > gTotalArray[j]) gTotalArray[j] = gGoodArray[j]+1;
 			}
 			else
 			{
 				gGoodArray[j] -= (S_GOOD_START/2);
+				// Prevent good count from going below 1
 				if (gGoodArray[j] < 1) gGoodArray[j] = 1;
 			}
 		}
+		// Skip to next word in sorted array
 		j += 2;
 		if (j >= gWordArray.length) j = gWordArray.length - 1;
 	}
 }
 
+/**
+ * Show the overview help page in the right pane.
+ */
 function help()
 {
 	showHref("chrome://newsfox/content/help/overview.xhtml");
 }
 
+/**
+ * Show the About page in the right pane.
+ */
 function showAbout()
 {
 	showHref("chrome://newsfox/content/help/about.xhtml");
 }
 
+/**
+ * Open NewsFox info URL in a new browser tab.
+ */
 function showNF()
 {
 	openNewTab(NFINFO);
 }
 
+/**
+ * Display an internal help/content URL in the right pane.
+ *
+ * @param {string} url - The chrome or http(s) URL to display.
+ */
 function showHref(url)
 {
 	var hrefPane = document.getElementById("hrefContent");
@@ -991,12 +1172,18 @@ function showHref(url)
 	contentDeck.selectedIndex = 0;
 }
 
+/**
+ * Open the shortcuts dialog (modal, resizable).
+ */
 function showShortcuts()
 {
 	window.openDialog("chrome://newsfox/content/help/shortcuts.xul",
 		"newsfox-dialog","centerscreen,resizable", null);
 }
 
+/**
+ * Open the homepage of the currently selected feed.
+ */
 function home()
 {
 	var tree = document.getElementById("newsfox.feedTree");
@@ -1018,6 +1205,7 @@ function showOptions()
 	var keySet = document.getElementById("shortcut-keys");
 	for (var i=keySet.firstChild; i != null; i=i.nextSibling)
 	{
+		// Detect if shortcuts are custom (3) or match predefined sets (0,1,2)
 		keyType[index] = 3;  // 3 is custom
 		for (var j=0; j<3; j++)
 		{
@@ -1034,6 +1222,7 @@ function showOptions()
 	if (keySet.firstChild == null) keyIndex = 0;
 	var newKeyIndex, mvContents;
 	var curDir = NFgetPref("global.directory", "str", "");
+	// Pass current options and directory settings to the dialog
 	var params = { ok:false, keyIndex:keyIndex, newKeyIndex:newKeyIndex, nfDir:curDir, mvContents:mvContents, gOpt:gOptions, keyList:scKeyList };
 	var win = window.openDialog("chrome://newsfox/content/programOptions.xul",
 		"newsfox-dialog","chrome,centerscreen,modal", params);
@@ -1109,7 +1298,7 @@ function chooseOptions()
 	var index = feedtree.currentIndex;
 	if (index == -1) return;
 	var level = feedtree.view.getLevel(index);
-	// need following line because of FF bug not disabling option for
+	// Need following line because of FF bug not disabling option for
 	// categories in context menu
 	if (level > 1) return;
 	var isSearch = gFdGroup[gIdx.fdgp[index]].search;
@@ -1122,7 +1311,7 @@ function chooseOptions()
  */
 function showGroupOptions(index,isNew,isSearch)
 {
-	// following two lines due to FF bug that sometimes doesn't
+	// Following two lines due to FF bug that sometimes doesn't
 	// hide context menu properly
 	var feedMenu = document.getElementById("feedMenu");
 	feedMenu.hidePopup();
@@ -1147,6 +1336,7 @@ function showGroupOptions(index,isNew,isSearch)
 	lists[1] = new Array();
 	for (i=0; i<gFdGroup[grp].list.length; i++)
 		lists[1].push(gFdGroup[grp].list[i]);
+	// For new search groups, include all feeds initially
 	if (isNew && isSearch)
 		for (i=0; i<gFdGroup[0].list.length; i++)
 			lists[1].push(gFdGroup[0].list[i]);
@@ -1176,6 +1366,7 @@ function showGroupOptions(index,isNew,isSearch)
 
 	if (params.ok)
 	{
+		// Temporarily collapse groups to avoid index drift during updates
 		if (grp != 0 && gFdGroup[grp].expanded)
 		{
 			feedtree.view.toggleOpenState(index);
@@ -1221,6 +1412,7 @@ function showGroupOptions(index,isNew,isSearch)
 			deleteGroup(false);
 		}
 	}
+	// Restore group expansion states
 	if (exp0) feedtree.view.toggleOpenState(0);
 	index = getGroupRow(grp);
 	if (expgrp) feedtree.view.toggleOpenState(index);
@@ -1236,6 +1428,8 @@ function showFeedOptions(index,isNew)
 	var curGrp = gIdx.fdgp[index];
 	var nFeed = gIdx.feed[index];
 	var feed = gFmodel.get(nFeed);
+	// namearray: group titles (escaped), membarray: bitmask for membership/search
+	// membarray2: original membership flags to compute changes
 	var namearray = new Array();
 	var membarray = new Array();
 	var membarray2 = new Array();
@@ -1258,6 +1452,7 @@ function showFeedOptions(index,isNew)
 	var groupstr = namearray.join();
 	var groupmemb = membarray.join();
 
+	// Decrypt auth fields for editing
 	var un = "";
 	if (feed.username) un = gSdr.decryptString(feed.username);
 	var pw = "";
@@ -1266,6 +1461,7 @@ function showFeedOptions(index,isNew)
 	var tagsToRemove = feed.htmlRemove;
 	if (tagsToRemove == "") tagsToRemove = gOptions.htmlRemove;
 
+	// Pass all relevant feed options and metadata into the dialog
 	var params = { ok:false, name:feed.getDisplayName(), iconsrc:feed.icon.src, homepage:feed.homepage, url:feed.url, style:feed.style, deleteOldStyle:feed.deleteOldStyle, autoCheck:feed.autoCheck, groupstr:groupstr, groupmemb:groupmemb, isNew:isNew, checkFeed:checkFeed, uid:feed.uid, model:gFmodel, daysToKeep:feed.daysToKeep, prvate:feed.prvate, username:un, password:pw, storage:feed.storage, lastUpdate:feed.lastUpdate, autoRefreshInterval:feed.autoRefreshInterval, Xfilter:feed.Xfilter, XfilterType: feed.XfilterType, XfilterNew: feed.XfilterNew, XfilterMimeType:feed.XfilterMimeType, XfilterImages: feed.XfilterImages, sortStr: feed.sortStr, changedUnread:feed.changedUnread, htmlRemove:tagsToRemove };
 	var win = window.openDialog("chrome://newsfox/content/feedOptions.xul",
 		"newsfox-dialog","chrome,centerscreen,modal", params);
@@ -1357,6 +1553,7 @@ function showFeedOptions(index,isNew)
 				downloadIcon(feed);
 			}
 		}
+		// Update authentication if changed and re-encrypt
 		if (feed.prvate != params.prvate || un != params.username || pw != params.password)
 		{
 			feed.prvate = params.prvate;
@@ -1397,6 +1594,9 @@ function showFeedOptions(index,isNew)
 	return index;
 }
 
+/**
+ * Clear the right pane and show a blank content area.
+ */
 function buildBlank()
 {
 	resetIframe("buildContent");
@@ -1423,6 +1623,7 @@ function troubleshoot()
 	var summary = getErrorSummary(feed.error);
 	var remedies = getErrorRemedies(feed.error);
 
+		// Build error display with summary and remedies
 		var b = doc.createElement("b");
 		b.appendChild(doc.createTextNode(summary));
 	doc.body.appendChild(b);
@@ -1432,6 +1633,7 @@ function troubleshoot()
 		p.innerHTML = remedies.replace(/\n/g,"<br/>");
 	doc.body.appendChild(p);
 
+		// Add feed validator link for invalid URL errors
 		if (feed.error.substring(0,1) == ERROR_INVALID_FEED_URL)
 		{
 			var p1 = doc.createElement("p");
@@ -1445,6 +1647,7 @@ function troubleshoot()
 	doc.body.appendChild(p1);
 		}
 
+		// Add direct link to the problematic feed URL
 		var p2 = doc.createElement("p");
 		var a2 = doc.createElement("a");
 		a2.setAttribute("href",feed.url);
@@ -1469,8 +1672,8 @@ function troubleshoot()
 function feedSelected()
 {
 	if (feedSelectTimeout != null) clearTimeout(feedSelectTimeout);
-	// when dragging articles don't want new collection
-	// toggleopenstate fires the select event (rowCountChanged does)
+	// When dragging articles, avoid rebuilding the collection due to transient
+	// selection changes. Note: toggleOpenState triggers select via rowCountChanged.
 	if (dragToggling) return;
 	if ((gCollect.type == 1 || gCollect.type == 2) && NFgetPref("u.markReadOnExit", "bool", false))
 		markFlaggedUnread(false,true);
@@ -1492,6 +1695,7 @@ function feedSelected()
 		{
 			loadingTooltip(true);
 			document.getElementById("mfeedTitle").value = "?";
+			// Load all feeds in the group with progress indication
 			for (var i=0; i<grp.list.length; i++)
 			{
 				loadFeed(gFmodel.get(grp.list[i]),true,false);
@@ -1512,6 +1716,7 @@ function feedSelected()
 	{
 		var feed = gFmodel.get(nFeed);
 		downloadIcon(feed);
+		// Ensure feed is loaded into memory before building collection
 		loadFeed(feed,true,false);
 		feed.flags.length = feed.size();
 		gCollect = new NormalCollection(nFeed, gIdx.catg[index], true);
@@ -1522,10 +1727,15 @@ function feedSelected()
 	arttree.view = new ArticleTreeModel();
 	artTreeInvalidate();
 	gExtraInvalidateTimer = setTimeout(extraInvalidate, gExtraInvalidateValue);
+	// Defer troubleshoot prompt for feeds with persistent errors
 	if (nFeed >= 0 && feed.error != ERROR_OK && feed.error != ERROR_REFRESH)
 		feedSelectTimeout = setTimeout(troubleshoot, 250);
 }
 
+/**
+ * Perform an additional invalidate to ensure both article and feed trees
+ * are refreshed after asynchronous updates.
+ */
 function extraInvalidate()
 {
 	clearTimeout(gExtraInvalidateTimer);
@@ -1533,6 +1743,13 @@ function extraInvalidate()
 	feedTreeInvalidate();
 }
 
+/**
+ * Apply the default sort order stored in the collection and optionally
+ * update the UI sort arrow to reflect the final criterion.
+ *
+ * @param {Object} collect - Collection with `sortStr` and sorting methods.
+ * @param {boolean} doArrow - Whether to set the sort arrow in the header.
+ */
 function doDefaultSort(collect, doArrow)
 {
 	var sorts = collect.sortStr;
@@ -1555,6 +1772,12 @@ function doDefaultSort(collect, doArrow)
 	}
 }
 
+/**
+ * Build a thread index for replies by grouping similar titles and assigning
+ * hierarchical ordering values.
+ *
+ * @param {Object} collect - The article collection to index.
+ */
 function makeThreadIndex(collect)
 {
 	collect.artSort("date", "descending");
@@ -1564,16 +1787,19 @@ function makeThreadIndex(collect)
 	var nextArray = new Array();
 	for (var i=0; i<collect.size(); i++)
 	{
+		// Normalize title by removing "Re:" prefix and forward slashes
 		var rTitle = noReTitle(collect.get(i).title);
 		rTitle = rTitle.replace(/\//g,"");
 		var index = titles.indexOf("/"+rTitle+"/")-1;
 		if (index > -1)
 		{
+			// Found existing thread - assign reply thread ID
 			var which = titles.substring(titles.lastIndexOf("/",index-1)+1,index+1);
 			collect.get(i).thr = --nextArray[which];
 		}
 		else
 		{
+			// New thread - assign new thread ID and add to titles list
 			nextArray[next] = MULT*next;
 			collect.get(i).thr = nextArray[next];
 			titles += next++ + "/" + rTitle + "/";
@@ -1581,6 +1807,12 @@ function makeThreadIndex(collect)
 	}
 }
 
+/**
+ * Populate the history menu with recently viewed articles.
+ *
+ * @param {Element} menu - The history menu DOM element.
+ * @returns {boolean} True after populating.
+ */
 function onHistoryMenuShowing(menu)
 {
 	while (menu.firstChild != null) menu.removeChild(menu.firstChild);
@@ -1594,11 +1826,21 @@ function onHistoryMenuShowing(menu)
 	return true;
 }
 
+/**
+ * Navigate to a previously viewed article from the history menu.
+ *
+ * @param {Event} event - The selection event from the menu.
+ */
 function onHistoryMenuSelect(event)
 {
 	pastArticleSelected(event.target.id);
 }
 
+/**
+ * Display a past article (kept in `pastArticles`) with its saved context.
+ *
+ * @param {number} index - Index into the `pastArticles` list.
+ */
 function pastArticleSelected(index)
 {
 	var art = pastArticles[index];
@@ -1614,7 +1856,7 @@ function articleSelected()
 {
 	if (!gDisplayArticle) return;
 	var tree = document.getElementById("newsfox.articleTree");
-	// don't display article if selecting multiple articles
+	// Don't display article if selecting multiple articles
 	if (tree.view.selection.count > 1) return;
 	var index = tree.currentIndex;
 	if (index == -1) return;
@@ -1622,6 +1864,7 @@ function articleSelected()
 	var read = gCollect.isRead(index);
 	var feed = gCollect.getFeed(index);
 
+	// Update spam filter with this article as a good example
 	if (gOptions.spam) spamFilterUpdate(art,read,true);
 
 	if (!read && gOptions.markRead) markArtRead(false);
@@ -1634,6 +1877,15 @@ function articleSelected()
 	doDisplay(art, style, XfilterType, feed);
 }
 
+/**
+ * Render the selected article using either the web view or sanitized text
+ * view, handle clipboard copy, and stop any ongoing navigation first.
+ *
+ * @param {Object} art - The article to display.
+ * @param {number} style - Feed display style.
+ * @param {number} XfilterType - Extended filter type.
+ * @param {Object} feed - Feed context for the article.
+ */
 function doDisplay(art, style, XfilterType, feed)
 {
 	// Stop any previous page loading
@@ -1650,6 +1902,8 @@ function doDisplay(art, style, XfilterType, feed)
 
 	if (gOptions.copyClip != 0)
 	{
+		// Optional: copy selected article field (HTML, link, title, date, etc.)
+		// to the system clipboard based on user's preference.
 		var trans = Components.classes["@mozilla.org/widget/transferable;1"]
 			.createInstance(Components.interfaces.nsITransferable);
 		try { trans.init(null); }
@@ -1694,6 +1948,7 @@ function doDisplay(art, style, XfilterType, feed)
 				break;
 		}
 
+		// Provide data in both HTML and Unicode flavors for better compatibility
 		trans.setTransferData("text/html",htmlStr, htmlStr.toString().length);
 		trans.setTransferData("text/unicode",htmlStr, htmlStr.toString().length*2);
 
@@ -1719,7 +1974,7 @@ function doDisplay(art, style, XfilterType, feed)
 	}
 	else
 	{
-		// display using innerHTML to resolve security issues pointed out by Wladimir Palant
+		// Display using innerHTML to resolve security issues pointed out by Wladimir Palant
 		resetIframe("buildContent");
 		getTextView(art, feed);
 		var buildPane = document.getElementById("buildContent");
@@ -1728,9 +1983,15 @@ function doDisplay(art, style, XfilterType, feed)
 	}
 }
 
+/**
+ * Mark the currently selected article as read, unless focus is on the
+ * article tree due to a blur event.
+ *
+ * @param {boolean} blurring - True when called from blur handler.
+ */
 function markArtRead(blurring)
 {
-	// don't mark read if another tab opened
+	// Don't mark read if another tab opened
 	if (blurring && document.commandDispatcher.focusedElement)
 	{
 		var focusId = document.commandDispatcher.focusedElement.id;
@@ -1751,6 +2012,9 @@ function markArtRead(blurring)
 	}
 }
 
+/**
+ * Open the clicked article (middle click behavior) in a new tab.
+ */
 function articleTreeMClicked()
 {
 	var tree = document.getElementById("newsfox.articleTree");
@@ -1760,13 +2024,17 @@ function articleTreeMClicked()
 	openNewTab(article.link);
 }
 
+/**
+ * Double-click handler that opens the current article in a new tab.
+ */
 function articleTreeDblClicked()
 {
 	this.articleTreeMClicked();
 }
 
 /**
- * Select the next unread article.
+ * Select the next unread article in the current context; if none exists,
+ * advances to the next feed/group according to tree order and continues.
  */
 function selectNextUnreadArticle()
 {
@@ -1782,7 +2050,7 @@ function selectNextUnreadArticle()
 	{
 		feedtree.view.selection.select(row);
 		feedtree.treeBoxObject.ensureRowIsVisible(row);
-// skip opened groups and categories
+		// Skip opened groups and categories
 		if (!((isGroup() && gFdGroup[gIdx.fdgp[row]].expanded) || gCollect.type == 2))
 			if (goToNext(0)) return;
 	}
@@ -1795,12 +2063,21 @@ function selectNextUnreadArticle()
 		flashTitle();
 }
 
+/**
+ * Briefly clear and restore the window title to get user attention.
+ */
 function flashTitle()
 {
 	setTimeout(doneTitle,1);
 	setTimeout(setTitle,501);
 }
 
+/**
+ * Helper to move selection to the next unread article at/after `index`.
+ *
+ * @param {number} index - Starting index to search from.
+ * @returns {boolean} True if an unread article was selected; false otherwise.
+ */
 function goToNext(index)
 {
 	var arttree = document.getElementById("newsfox.articleTree");
@@ -1815,7 +2092,8 @@ function goToNext(index)
 }
 
 /**
- * Select the previous unread article.
+ * Select the previous unread article; if none, walk to previous feed/group
+ * and continue searching upwards.
  */
 function selectPrevUnreadArticle()
 {
@@ -1835,7 +2113,7 @@ function selectPrevUnreadArticle()
 	{
 		feedtree.view.selection.select(row);
 		feedtree.treeBoxObject.ensureRowIsVisible(row);
-// skip opened groups and categories
+		// Skip opened groups and categories
 		if (!((isGroup() && gFdGroup[gIdx.fdgp[row]].expanded) || gCollect.type ==2))
 			if (goToPrev(gCollect.size()-1)) return;
 	}
@@ -1848,6 +2126,12 @@ function selectPrevUnreadArticle()
 		flashTitle();
 }
 
+/**
+ * Helper to move selection to the previous unread article at/before `index`.
+ *
+ * @param {number} index - Starting index to search backwards from.
+ * @returns {boolean} True if an unread article was selected; false otherwise.
+ */
 function goToPrev(index)
 {
 	var arttree = document.getElementById("newsfox.articleTree");
@@ -1866,7 +2150,9 @@ function goToPrev(index)
 ////////////////////////////////////////////////////////////////
 
 /**
- * Route events.
+ * Route DOM events to mouse/keyboard handlers.
+ *
+ * @param {Event} e - DOM event.
  */
 function handleEvent(e)
 {
@@ -1875,17 +2161,22 @@ function handleEvent(e)
 }
 
 /**
- * Handle mouse events.
+ * Handle mouse events (reserved for future use).
+ *
+ * @param {MouseEvent} e - Mouse event.
  */
 function handleMouseEvent(e)
 {
 }
 
 /**
- * Handle keyboard events.
+ * Handle keyboard shortcuts and navigation for feed/article trees.
+ *
+ * @param {KeyboardEvent} e - Keyboard event.
  */
 function handleKeyEvent(e)
 {
+	// Detect which tree has focus: 1=feed, 2=article, 3=other
 	var focus = 0;
 	try { var focusId = document.commandDispatcher.focusedElement.id; }
 	catch(e) { var focusId = null; }
@@ -2034,6 +2325,12 @@ function handleKeyEvent(e)
 // Util
 ////////////////////////////////////////////////////////////////
 
+/**
+ * Configure visibility of options menu items based on current selection.
+ *
+ * @param {Element} menu - The options menu element.
+ * @returns {boolean} True when menu is updated.
+ */
 function onOptMenuShowing(menu)
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -2066,6 +2363,11 @@ function onOptMenuShowing(menu)
 	return true;
 }
 
+/**
+ * Check if any feed uses HTTPS.
+ *
+ * @returns {boolean} True if there is at least one HTTPS feed.
+ */
 function hasSecure()
 {
 	for (var i=0; i<gFmodel.size(); i++)
@@ -2073,6 +2375,12 @@ function hasSecure()
 	return false;
 }
 
+/**
+ * Configure feed context menu based on selection and current collection type.
+ *
+ * @param {Element} menu - Feed context menu to update.
+ * @returns {boolean} True when menu is updated.
+ */
 function onFeedMenuShowing(menu)
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -2081,6 +2389,7 @@ function onFeedMenuShowing(menu)
 	var level = feedtree.view.getLevel(index);
 
 	var nGrp = gIdx.fdgp[index];
+	// Identify group by index, current size and title to check if unsort is possible
 	var curgGroup = nGrp + "," + gFdGroup[nGrp].list.length + "," + gFdGroup[nGrp].title;
 	var canUnsort = (gGroup == curgGroup);
 
@@ -2158,10 +2467,13 @@ function onFeedMenuShowing(menu)
 	return true;
 }
 
-// Flag all selected articles (set star)
+/**
+ * Flag all selected articles (set star) in the current selection.
+ */
 function flagSelectedArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
+	// Flag all selected articles that aren't already flagged
 	for (var i = 0; i < gCollect.size(); i++)
 	{
 		if (arttree.view.selection.isSelected(i) && !gCollect.isFlagged(i))
@@ -2172,10 +2484,13 @@ function flagSelectedArticles()
 	artTreeInvalidate();
 }
 
-// Unflag all selected articles (clear star)
+/**
+ * Unflag all selected articles (clear star) in the current selection.
+ */
 function unflagSelectedArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
+	// Unflag all selected articles that are currently flagged
 	for (var i = 0; i < gCollect.size(); i++)
 	{
 		if (arttree.view.selection.isSelected(i) && gCollect.isFlagged(i))
@@ -2186,12 +2501,19 @@ function unflagSelectedArticles()
 	artTreeInvalidate();
 }
 
-// Update context menu to show/hide flag/unflag options based on selection
+/**
+ * Update context menu visibility for actions based on the current selection.
+ * Ensures options like Flag/Unflag/Get XBody/Clear XBody are shown only when applicable.
+ *
+ * @param {Element} menu - The article context menu element.
+ * @returns {boolean} True if the menu should be shown; false otherwise.
+ */
 function onArtMenuShowing(menu)
 {
 	var arttree = document.getElementById("newsfox.articleTree");
 	var cnt = arttree.view.selection.count;
 	var cnt2 = 0;
+	// Count how many selected articles are already read
 	for (var i = 0; i < gCollect.size(); i++)
 	{
 		if (arttree.view.selection.isSelected(i) && gCollect.isRead(i))
@@ -2317,23 +2639,44 @@ function onArtMenuShowing(menu)
 	return (gCollect.type != -1);
 }
 
+/**
+ * Populate the Add Group menu with tag options.
+ *
+ * @param {Element} menu - The menu element to populate.
+ * @returns {boolean} True when the menu is prepared.
+ */
 function onAddGroupMenuShowing(menu)
 {
 	makeTagMenu("aGtag");
 	return true;
 }
 
+/**
+ * Handle selection of a tag item in the Add Group menu.
+ *
+ * @param {Event} event - The menu selection event.
+ */
 function onAddTagGroupSelect(event)
 {
 	addTagGroup(orderArray[event.target.id]);
 	event.stopPropagation;
 }
 
+/**
+ * Handle selection within a tag menu to update the active Tag Group.
+ *
+ * @param {Event} event - The menu selection event.
+ */
 function onTagMenuSelect(event)
 {
 	updateTagGroup(orderArray[event.target.id]);
 }
 
+/**
+ * Build a tag menu with existing tags and a trailing "new tag" option.
+ *
+ * @param {string} id - The element id of the menu to populate.
+ */
 function makeTagMenu(id)
 {
 	var tagSorter = function(a,b)
@@ -2366,6 +2709,12 @@ function makeTagMenu(id)
 	}
 }
 
+/**
+ * Move a group within the groups list and update tree indices accordingly.
+ *
+ * @param {number} oldgrp - Original group index.
+ * @param {number} newgrp - Target group index.
+ */
 function mvGrp(oldgrp, newgrp)
 {
 	if (oldgrp == newgrp || oldgrp+1 == newgrp || oldgrp == 0 || newgrp == 0) return;
@@ -2406,6 +2755,12 @@ function mvGrp(oldgrp, newgrp)
 	refreshModelSelect(newrow - up*num);
 }
 
+/**
+ * Replace all occurrences of a group index in the index arrays.
+ *
+ * @param {number} oldgrp - Group index to replace.
+ * @param {number} newgrp - Replacement group index.
+ */
 function grpChg(oldgrp,newgrp)
 {
 	for (var i=0; i<gIdx.fdgp.length; i++)
@@ -2413,6 +2768,12 @@ function grpChg(oldgrp,newgrp)
 			gIdx.fdgp[i] = newgrp;
 }
 
+/**
+ * Compute the first row in the tree for a given group index.
+ *
+ * @param {number} grp - Group index.
+ * @returns {number} Tree row number.
+ */
 function getGroupRow(grp)
 {
 	var i = gIdx.fdgp.length - 1;
@@ -2420,6 +2781,13 @@ function getGroupRow(grp)
 	return ++i;
 }
 
+/**
+ * Find the tree row for a specific feed inside a group.
+ *
+ * @param {number} grp - Group index.
+ * @param {number} nFeed - Feed index in the model.
+ * @returns {number} Tree row; may be the row after the last feed if not found.
+ */
 function getFeedRow(grp,nFeed)
 {
 	var i = getGroupRow(grp);
@@ -2427,6 +2795,11 @@ function getFeedRow(grp,nFeed)
 	return i;  // returns row after last feed if not in group
 }
 
+/**
+ * Move the selected group or feed up/down within its container.
+ *
+ * @param {boolean} movingUp - True to move up; false to move down.
+ */
 function moveIt(movingUp)
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -2457,6 +2830,13 @@ function moveIt(movingUp)
 	}
 }
 
+/**
+ * Change focus/selection within a tree, scrolling into view.
+ *
+ * @param {string} treeName - DOM id of the tree.
+ * @param {"up"|"down"} direction - Direction to move.
+ * @param {"select"|"focus"} select - Whether to select or only move focus.
+ */
 function mvFocus(treeName,direction,select)
 {
 	var tree = document.getElementById(treeName);
@@ -2478,6 +2858,13 @@ function mvFocus(treeName,direction,select)
 	tree.treeBoxObject.ensureRowIsVisible(j);
 }
 
+/**
+ * Move a feed within its group to a new relative position and update indices.
+ *
+ * @param {number} curGrp - Group index.
+ * @param {number} curFeed - Current feed index.
+ * @param {number} newFeed - Target neighbor feed index (-2 for end).
+ */
 function mvFeed(curGrp,curFeed,newFeed)
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -2492,6 +2879,7 @@ function mvFeed(curGrp,curFeed,newFeed)
 	}
 	var up = (newRow > curRow);
 	if (curPos == newPos || curPos+1 == newPos) return;
+	// Temporarily collapse if the row is expanded to avoid index drift
 	var curExpand = gIdx.open[curRow];
 	if (curExpand) feedtree.view.toggleOpenState(curRow);
 	gFdGroup[curGrp].list.splice(curPos,1);
@@ -2505,6 +2893,7 @@ function mvFeed(curGrp,curFeed,newFeed)
 	gIdx.catg.splice(newRow-up,0,0);
 	gIdx.open.splice(curRow,1);
 	gIdx.open.splice(newRow-up,0,false);
+	// Restore expansion at the new row after move
 	if (curExpand) feedtree.view.toggleOpenState(newRow-up);
 
 	saveGroupModel();
@@ -2512,6 +2901,11 @@ function mvFeed(curGrp,curFeed,newFeed)
 	refreshModelSelect(newRow-up);
 }
 
+/**
+ * Show or hide the loading tooltip depending on platform version.
+ *
+ * @param {boolean} show - True to show; false to hide.
+ */
 function loadingTooltip(show)
 {
 	var tooltip = document.getElementById("loadingTooltip");
@@ -2524,6 +2918,11 @@ function loadingTooltip(show)
 		tooltip.hidePopup();
 }
 
+/**
+ * Update the simple text progress meter visibility and value.
+ *
+ * @param {number} value - 0 hides, otherwise shows with percent text.
+ */
 function setPmeter(value)
 {
 	var pmeter = document.getElementById("pmeter");
@@ -2536,6 +2935,11 @@ function setPmeter(value)
 	}
 }
 
+/**
+ * Toggle 3-pane layout to horizontal if requested.
+ *
+ * @param {boolean} horiz - True to use horizontal layout.
+ */
 function doHorizontal(horiz)
 {
 	var hartBox = document.getElementById("hbox3pane");
@@ -2552,6 +2956,9 @@ function doHorizontal(horiz)
 	rightPane.removeChild(hartBox);
 }
 
+/**
+ * Reset unread counters for all groups (defers recalculation on demand).
+ */
 function resetGroupUnread()
 {
 	for (var i=0; i<gFdGroup.length; i++)
@@ -2563,6 +2970,11 @@ function resetGroupUnread()
 		resetGUnread(i);
 }
 
+/**
+ * Reset unread state for a single group.
+ *
+ * @param {number} i - Group index.
+ */
 function resetGUnread(i)
 {
 	gFdGroup[i].pastUnread = gFdGroup[i].unread;
@@ -2570,6 +2982,13 @@ function resetGUnread(i)
 	gFdGroup[i].processUnread = false;
 }
 
+/**
+ * Comparator for sorting feeds alphabetically or by configured field.
+ *
+ * @param {number} a - Feed index A.
+ * @param {number} b - Feed index B.
+ * @returns {number} Sort order for Array.sort.
+ */
 function abc(a,b)
 {
 		var feedSorter = NFgetPref("advanced.feedSorter", "str", null);
@@ -2588,6 +3007,9 @@ function abc(a,b)
 		return gFmodel.get(b).getDisplayName().toLowerCase() < gFmodel.get(a).getDisplayName().toLowerCase() ? 1 : -1;
 }
 
+/**
+ * Sort feeds within the current group using the `abc` comparator.
+ */
 function AtoZ()
 {
 	var abcSandbox = new Components.utils.Sandbox(window);
@@ -2607,6 +3029,9 @@ function AtoZ()
 var gGroup = null;
 var gJoin = null;
 
+/**
+ * Restore the previous feed order after a temporary sort.
+ */
 function unsortFeeds()
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
@@ -2623,6 +3048,9 @@ function unsortFeeds()
 	if (expand) feedtree.view.toggleOpenState(row);
 }
 
+/**
+ * Print the currently displayed article (web view or text view).
+ */
 function printArticle()
 {
 	if (document.getElementById("contentDeck").selectedIndex == 0)
@@ -2634,6 +3062,9 @@ function printArticle()
 		document.getElementById("buildContent").contentWindow.print();
 }
 
+/**
+ * Toggle the Xtend filter (column cycle) on the current article row.
+ */
 function toggleFilter()
 {
 	var col = { id : "Xtend" }
@@ -2642,12 +3073,20 @@ function toggleFilter()
 	if (row > -1) arttree.view.cycleCell(row,col);
 }
 
+/**
+ * Invalidate and repaint the feed tree.
+ */
 function feedTreeInvalidate()
 {
 	var feedtree = document.getElementById("newsfox.feedTree");
 	feedtree.treeBoxObject.invalidate();
 }
 
+/**
+ * Invalidate and repaint the article tree.
+ *
+ * @returns {Element} The article tree element.
+ */
 function artTreeInvalidate()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
@@ -2655,6 +3094,9 @@ function artTreeInvalidate()
 	return arttree;
 }
 
+/**
+ * Recalculate the number of groups each feed belongs to.
+ */
 function getNumGroups()
 {
 	for (var i=0; i<gFmodel.size(); i++) numGroupArray[i] = 0;
@@ -2666,6 +3108,9 @@ function getNumGroups()
 	}
 }
 
+/**
+ * Observe article tree column changes and persist default columns on first run.
+ */
 function checkArtTreeColumnChange()
 {
 // could use mouseout(FF2+) or mouseleave(newer) but they are not quite right
@@ -2683,6 +3128,9 @@ function checkArtTreeColumnChange()
 }
 
 var gSearchValue ="";
+/**
+ * Prompt for a simple search string and store it in `gSearchValue`.
+ */
 function doSearch()
 {
 	var prompts = Components.classes["@mozilla.org/embedcomp/prompt-service;1"]
@@ -2694,7 +3142,9 @@ function doSearch()
 	else gSearchValue = "";
 }
 
-// Queue getXbody for all selected articles that have not been extended yet
+/**
+ * Queue getXbody for all selected articles that have not been extended yet.
+ */
 function getXbodySelectedArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
@@ -2709,7 +3159,9 @@ function getXbodySelectedArticles()
 	}
 }
 
-// Clear extended body for all selected articles
+/**
+ * Clear extended body (Xbody) for all selected articles.
+ */
 function clearXbodySelectedArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
