@@ -54,6 +54,102 @@ var pauseTimeout;
 
 var timeList = new Array();
 
+// Map to track hosts currently being processed for feed requests
+// (only one request per host at a time to prevent server overload)
+var feedHostsInProcess = new Map();
+
+// Queue for feeds that were skipped due to host conflicts
+var skippedFeedsQueue = new Array();
+
+/**
+ * Retries feeds that were skipped due to host conflicts.
+ * This function is called periodically to check if previously skipped feeds can now be processed.
+ */
+function retrySkippedFeeds()
+{
+	if (skippedFeedsQueue.length === 0) return;
+	
+	var now = Date.now();
+	
+	// Move skipped feeds back to the main queue if their hosts are no longer being processed
+	for (var i = skippedFeedsQueue.length - 1; i >= 0; i--)
+	{
+		var skippedFeed = skippedFeedsQueue[i];
+		var host = extractHostFromUrl(skippedFeed.url);
+		
+		// Check if feed has been waiting too long
+		if (now - skippedFeed.timestamp > gOpt.renewTimeout)
+		{
+			// Force retry even if host is still being processed
+			gFeedsToCheck.unshift(skippedFeed.url);
+			skippedFeedsQueue.splice(i, 1);
+			logHostTracking("Forcing retry due to timeout", host, skippedFeed.url);
+			continue;
+		}
+		
+		if (!feedHostsInProcess.has(host))
+		{
+			// Host is no longer being processed, move back to main queue
+			gFeedsToCheck.unshift(skippedFeed.url);
+			skippedFeedsQueue.splice(i, 1);
+			logHostTracking("Retrying feed - host no longer busy", host, skippedFeed.url);
+		}
+	}
+	
+	// Schedule next retry if there are still skipped feeds
+	if (skippedFeedsQueue.length > 0)
+	{
+		setTimeout(retrySkippedFeeds, 1000); // Retry every second
+	}
+}
+
+/**
+ * Debug function to log host tracking information.
+ * Only logs when debugging is enabled.
+ */
+function logHostTracking(message, host, url)
+{
+	if (gOptions && gOptions.debug)
+	{
+		console.log("Host Tracking: " + message + " - Host: " + host + " - URL: " + url);
+	}
+}
+
+/**
+ * Extracts the hostname from a URL for host tracking purposes.
+ * @param {string} url - The URL to extract the hostname from.
+ * @returns {string} The hostname, or the full URL if hostname extraction fails.
+ */
+function extractHostFromUrl(url)
+{
+	try
+	{
+		// Handle file URLs specially
+		if (url.substring(0, 4) == "file")
+		{
+			return "file://localhost";
+		}
+		
+		// Use Components interface for proper URL parsing in XUL environment
+		if (typeof Components !== 'undefined' && Components.classes)
+		{
+			let ios = Components.classes["@mozilla.org/network/io-service;1"]
+					  .getService(Components.interfaces.nsIIOService);
+			let uri = ios.newURI(url, null, null);
+			return uri.host;
+		}
+		
+		// Fallback for environments without Components interface
+		let urlObj = new URL(url);
+		return urlObj.hostname;
+	}
+	catch (e)
+	{
+		// Fallback: use the full URL if hostname extraction fails
+		return url;
+	}
+}
+
 ////////////////////////////////////////////////////////////////
 // Check feeds
 ////////////////////////////////////////////////////////////////
@@ -93,6 +189,25 @@ function precheckFeed(gFeedsToCheck)
 	var i=gFmodel.size();
 	while(gFmodel.get(--i).url != url) if (i==0) precheckFeed(gFeedsToCheck);
 	var index = i;
+
+	// Check if this host is already being processed
+	var host = extractHostFromUrl(url);
+	if (feedHostsInProcess.has(host))
+	{
+		// Host is already being processed, skip this feed and add to retry queue
+		skippedFeedsQueue.push({ url: url, timestamp: Date.now() });
+		logHostTracking("Skipping feed due to host conflict", host, url);
+		
+		// Start retry mechanism if not already running
+		if (skippedFeedsQueue.length === 1)
+		{
+			setTimeout(retrySkippedFeeds, 1000);
+		}
+		
+		// Continue with the next feed
+		precheckFeed(gFeedsToCheck);
+		return;
+	}
 
 // TODO using this causes article pane to reset, checking feed with categories
 //     open is okay?, but may not be displaying all categories afterward
@@ -144,12 +259,19 @@ function doXMLHttpRequest(urlFeed,urlSent,username,password,gFeedsToCheck, repea
 	// FF used to throw an xmlhttp error on file not found, but now returns OK
 	// from xmlhttp request
 	var httpRenewTimeout = setTimeout(addAnotherCheck, gOptions.renewTimeout);
+	
+	// Mark this host as being processed
+	var host = extractHostFromUrl(urlFeed);
+	feedHostsInProcess.set(host, true);
+	logHostTracking("Marking host as processed", host, urlFeed);
+	
 	if (urlFeed.substring(0,4) == "file")
 	{
 		var nsIPH = Components.classes["@mozilla.org/network/protocol;1?name=file"].createInstance(Components.interfaces.nsIFileProtocolHandler);
 		var file = nsIPH.getFileFromURLSpec(urlFeed);
 		if (!file.exists())
 		{
+			feedHostsInProcess.delete(host);
 			abortHttpRequest(urlFeed, ERROR_NOT_FOUND, httpRenewTimeout);
 			return;
 		}
@@ -181,7 +303,10 @@ function doXMLHttpRequest(urlFeed,urlSent,username,password,gFeedsToCheck, repea
 		xmlhttp.send(null);
 	}
 	catch(e)
-		{ abortHttpRequest(urlFeed, ERROR_INVALID_FEED_URL, httpRenewTimeout) }
+	{
+		feedHostsInProcess.delete(host);
+		abortHttpRequest(urlFeed, ERROR_INVALID_FEED_URL, httpRenewTimeout)
+	}
 }
 
 function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, password, repeat, httpRenewTimeout)
@@ -189,6 +314,12 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 	var feed = gFmodel.getFeedByURL(urlFeed);
 	var url2 = xmlhttp.getResponseHeader("location");
 	var urlLookup = urlFeed;
+	
+	// Clean up host tracking when request completes
+	var host = extractHostFromUrl(urlFeed);
+	feedHostsInProcess.delete(host);
+	logHostTracking("Cleaning up host tracking", host, urlFeed);
+	
 	switch (xmlhttp.status)
 	{
 		case 200:  // OK
@@ -564,6 +695,12 @@ function abortHttpRequest(urlFeed, ERROR, httpRenewTimeout)
 {
 	removeUrlFromTimeList(urlFeed);
 	if (null != httpRenewTimeout) clearTimeout(httpRenewTimeout);
+	
+	// Clean up host tracking when request is aborted
+	var host = extractHostFromUrl(urlFeed);
+	feedHostsInProcess.delete(host);
+	logHostTracking("Aborting host tracking", host, urlFeed);
+	
 	var useError = (ERROR) ? ERROR : ERROR_OK;
 	gFmodel.getFeedByURL(urlFeed).error = useError;
 	stopHttpRequest();
@@ -668,6 +805,12 @@ function postRefresh()
 		if(gOptions.notifyUponNewSound) resultsSound();
 	}
 	gCheckInProgress = false;
+
+	// Clean up all host tracking when feed checking completes
+	feedHostsInProcess.clear();
+
+	// Clean up skipped feeds queue
+	skippedFeedsQueue.length = 0;
 }
 
 function reportRefreshResults()
