@@ -406,14 +406,54 @@ function updateKeys(keyIndex)
 	}
 }
 
-// Add new pattern via prompt dialogs
+// Helper: return true if a pattern already exists (case-sensitive match)
+function nfPatExists(pattern)
+{
+	var kids = document.getElementById("PatternsTreeKids");
+	for (var i=0; i<kids.childNodes.length; i++)
+	{
+		var row = kids.childNodes[i].firstChild;
+		var pat = row.childNodes[0].getAttribute("label");
+		if (pat === pattern) return true;
+	}
+	return false;
+}
+
+// Helper: open combined Pattern/Replacement prompt dialog
+function nfPromptPattern(defaultPattern, defaultReplacement)
+{
+	var args = { defaultPattern: defaultPattern || "", defaultReplacement: defaultReplacement || "", ok: false };
+	try
+	{
+		window.openDialog("chrome://newsfox/content/patternPrompt.xul", "patternPrompt", "chrome,centerscreen,modal", args);
+	}
+	catch(e)
+	{
+		// Fallback: two prompts if dialog fails to open
+		var pat = prompt("Pattern:", defaultPattern || "");
+		if (pat === null) return { ok: false };
+		var rep = prompt("Replacement:", defaultReplacement || "");
+		if (rep === null) rep = defaultReplacement || "";
+		return { ok: true, pattern: pat, replacement: rep };
+	}
+	if (!args.ok) return { ok: false };
+	return { ok: true, pattern: args.outPattern || "", replacement: args.outReplacement || "" };
+}
+
+// Add new pattern via single combined prompt with duplicate check
 function nfPatAdd()
 {
-	var NF_SB = document.getElementById("newsfox-string-bundle");
-	var pat = prompt("Pattern:", "");
-	if (pat === null) return;
-	var rep = prompt("Replacement:", "");
-	if (rep === null) rep = "";
+	var res = nfPromptPattern("", "");
+	if (!res.ok) return;
+	var pat = stringTrim(String(res.pattern));
+	var rep = String(res.replacement || "");
+	if (pat === "") return;
+	if (nfPatExists(pat))
+	{
+		alert("Pattern already exists.");
+		return;
+	}
+
 	var kids = document.getElementById("PatternsTreeKids");
 	var item = document.createElement("treeitem");
 	var row = document.createElement("treerow");
@@ -425,23 +465,45 @@ function nfPatAdd()
 	row.appendChild(c2);
 	item.appendChild(row);
 	kids.appendChild(item);
+
+	// Select the newly added row and ensure visible
+	try
+	{
+		var tree = document.getElementById("PatternsTree");
+		var idx = kids.childNodes.length - 1;
+		tree.view.selection.select(idx);
+		tree.treeBoxObject.ensureRowIsVisible(idx);
+	}
+	catch(e)
+	{
+		// ignore selection errors
+	}
 }
 
-// Edit selected pattern
+// Edit selected pattern via single combined prompt with duplicate check
 function nfPatEdit()
 {
 	var tree = document.getElementById("PatternsTree");
 	var rowIdx = tree.currentIndex;
 	if (rowIdx < 0) return;
 	var row = tree.view.getItemAtIndex(rowIdx).firstChild;
+
 	var curPat = row.childNodes[0].getAttribute("label");
 	var curRep = row.childNodes[1].getAttribute("label");
-	var pat = prompt("Pattern:", curPat || "");
-	if (pat === null) return;
-	var rep = prompt("Replacement:", curRep || "");
-	if (rep === null) rep = "";
+	var res = nfPromptPattern(curPat || "", curRep || "");
+	if (!res.ok) return;
+	var pat = stringTrim(String(res.pattern));
+	var rep = String(res.replacement || "");
+	if (pat === "") return;
+	// If changed and duplicates another existing, block
+	if (pat !== curPat && nfPatExists(pat))
+	{
+		alert("Pattern already exists.");
+		return;
+	}
+
 	row.childNodes[0].setAttribute("label", pat);
-	row.childNodes[1].setAttribute("label", rep);
+	row.childNodes[1].setAttribute("label", rep || "");
 }
 
 // Remove selected pattern
@@ -450,6 +512,10 @@ function nfPatRemove()
 	var tree = document.getElementById("PatternsTree");
 	var rowIdx = tree.currentIndex;
 	if (rowIdx < 0) return;
+	var row = tree.view.getItemAtIndex(rowIdx).firstChild;
+	var curPat = row.childNodes[0].getAttribute("label");
+	var msg = "Delete pattern '" + curPat + "'?";
+	if (!confirm(msg)) return;
 	var kids = document.getElementById("PatternsTreeKids");
 	kids.removeChild(kids.childNodes[rowIdx]);
 }

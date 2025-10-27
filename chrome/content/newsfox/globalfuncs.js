@@ -906,7 +906,7 @@ function transformImageURLs(node, baseuri, type)
 
 	// Always use user-defined patterns; never fall back to defaults.
 	// Stop execution if user-defined patterns are missing or empty.
-	if (!(typeof gOptions != "undefined" && gOptions && Array.isArray(gOptions.urlPatterns) && gOptions.urlPatterns.length > 0))
+	if (!Array.isArray(gOptions.urlPatterns) || gOptions.urlPatterns.length === 0)
 	{
 		return;
 	}

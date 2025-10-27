@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!-- Simple dialog to edit Pattern and Replacement in one prompt -->
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://newsfox/skin/" type="text/css"?>
+<!DOCTYPE dialog [
+  <!ENTITY % programOptionsDTD SYSTEM "chrome://newsfox/locale/programOptions.dtd"> %programOptionsDTD;
+  <!ENTITY % commonDTD SYSTEM "chrome://newsfox/locale/common.dtd"> %commonDTD;
+]>
+
+<dialog id="patternPromptDlg"
+	xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+	title="&patternsTab;"
+	buttons="accept,cancel"
+	onload="ppInit();"
+	ondialogaccept="return ppAccept();"
+	ondialogcancel="return ppCancel();">
+
+	<script type="application/javascript"><![CDATA[
+	function ppInit()
+	{
+		try
+		{
+			var args = window.arguments && window.arguments[0] ? window.arguments[0] : {};
+			document.getElementById("ppPattern").value = args.defaultPattern || "";
+			document.getElementById("ppReplacement").value = args.defaultReplacement || "";
+			document.getElementById("ppPattern").focus();
+		}
+		catch(e) {}
+	}
+
+	function ppAccept()
+	{
+		var pat = document.getElementById("ppPattern").value;
+		var rep = document.getElementById("ppReplacement").value;
+		try
+		{
+			var args = window.arguments && window.arguments[0] ? window.arguments[0] : {};
+			args.outPattern = pat;
+			args.outReplacement = rep;
+			args.ok = true;
+		}
+		catch(e) {}
+		return true;
+	}
+
+	function ppCancel()
+	{
+		try
+		{
+			var args = window.arguments && window.arguments[0] ? window.arguments[0] : {};
+			args.ok = false;
+		}
+		catch(e) {}
+		return true;
+	}
+	]]></script>
+
+	<vbox>
+		<hbox align="center">
+			<label value="&sCpattern;" control="ppPattern"/>
+			<textbox id="ppPattern" size="40"/>
+		</hbox>
+		<hbox align="center">
+			<label value="&sCreplacement;" control="ppReplacement"/>
+			<textbox id="ppReplacement" size="40"/>
+		</hbox>
+	</vbox>
+
+</dialog>
+
+
