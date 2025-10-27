@@ -78,7 +78,7 @@ function retrySkippedFeeds()
 		var host = extractHostFromUrl(skippedFeed.url);
 		
 		// Check if feed has been waiting too long
-		if (now - skippedFeed.timestamp > gOpt.renewTimeout)
+		if (now - skippedFeed.timestamp > gOptions.renewTimeout)
 		{
 			// Force retry even if host is still being processed
 			gFeedsToCheck.unshift(skippedFeed.url);
