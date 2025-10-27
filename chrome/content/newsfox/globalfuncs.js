@@ -792,6 +792,9 @@ function filterArticle(body)
 
 		// Remove "<audio src='https://samples.audible.com/*></audio>" elements
 		body = body.replace(/<audio src='https:\/\/samples\.audible\.com\/[^>]*?\/?><\/audio>/gi, "");
+		body = body.replace(/<audio src='https:\/\/s3\.amazonaws\.com\/graphicaudiosamples[^>]*?\/?><\/audio>/gi, "");
+		body = body.replace(/<audio src='https:\/\/tantor-site-assets\.s3\.amazonaws\.com\/mp3-samples[^>]*?\/?><\/audio>/gi, "");
+		body = body.replace(/<audio src='https:\/\/media\.audiobookstore\.com\/[^>]*?\/?><\/audio>/gi, "");
 	} catch (e) {
 		console.error("filterArticle: Error filtering elements from body:", e.message);
 	}
@@ -866,6 +869,14 @@ function transformImageURLs(node, baseuri, type)
 		{
 			pattern: "/secure.gravatar.com/",
 			replacement: "/wsrv.nl/?url=https://secure.gravatar.com/"
+		},
+		{
+			pattern: "//wsrv.nl/?url=https://wsrv.nl/?url=https://wsrv.nl/?url=",
+			replacement: "/wsrv.nl/?url="
+		},
+		{
+			pattern: "//wsrv.nl/?url=https://wsrv.nl/?url=",
+			replacement: "/wsrv.nl/?url="
 		}
 	];
 

@@ -752,6 +752,7 @@ function fixRelativeLinks(hText, baseuri)
 	const tagRegexes = new Map();
 	const srcsetRegex = /<img\s+[^>]*?srcset\s*=\s*(['"])([^'"]*)\1/gi;
 	const dataSrcsetRegex = /<img\s+[^>]*?data-srcset\s*=\s*(['"])([^'"]*)\1/gi;
+	const dataSrcRegex = /<img\s+[^>]*?data-src\s*=\s*(['"])([^'"]*)\1/gi;
 
 	// Process standard attributes more efficiently
 	for (let i = 0; i < TAG_NAME.length; i++)
@@ -764,7 +765,7 @@ function fixRelativeLinks(hText, baseuri)
 		{
 			attr = "href";
 		}
-		else if (tag === "img" || tag === "source")
+		else if (tag === "img" || tag === "source" || tag === "script")
 		{
 			attr = "src";
 		}
@@ -797,7 +798,7 @@ function fixRelativeLinks(hText, baseuri)
 			catch (e)
 			{
 				console.error(`Error resolving ${attr} URL:`, e.message,
-							{ tag, attr, url, baseUri: baseuriSpec });
+								{ tag, attr, url, baseUri: baseuriSpec });
 				return match;
 			}
 		});
@@ -831,6 +832,23 @@ function fixRelativeLinks(hText, baseuri)
 	// Process srcset and data-srcset attributes
 	hText = hText.replace(srcsetRegex, processSrcsetAttribute);
 	hText = hText.replace(dataSrcsetRegex, processSrcsetAttribute);
+
+	// Process data-src attributes
+	hText = hText.replace(dataSrcRegex, (match, quote, dataSrcValue) => {
+		if (!dataSrcValue) return match;
+
+		try
+		{
+			const resolvedDataSrc = resolveUrl(dataSrcValue, baseuriSpec);
+			return match.replace(quote + dataSrcValue + quote, quote + resolvedDataSrc + quote);
+		}
+		catch (e)
+		{
+			console.error("Error resolving data-src URL:", e.message,
+							{ dataSrcValue, baseUri: baseuriSpec });
+			return match;
+		}
+	});
 
 	return hText; // Return the modified HTML text with resolved links
 }

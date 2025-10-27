@@ -2125,6 +2125,7 @@ function processXbody(art, xmlhttp, feed)
 
 	// Clean and normalize HTML content
 	linkHTML = linkHTML.replace(/[\n|\r|\t]/g, " ");
+	linkHTML = linkHTML.replace(/>\s+</g, "><");
 	linkHTML = linkHTML.replace(/[\x00-\x1F]/g, "");
 
 	// Resolve baseUri early
@@ -2283,7 +2284,7 @@ function processXbody(art, xmlhttp, feed)
 	{
 		console.error("processXbody: Error processing base elements:", e.message);
 	}
-
+/*
 	// Fix all URLs in DOM before filtering
 	try
 	{
@@ -2366,9 +2367,12 @@ function processXbody(art, xmlhttp, feed)
 	}
 
 	// Extract the updated HTML from linkDOM (Is it Usefull???)
-	// console.debug("processXbody: linkHTML before linkDOM is: ", linkHTML);
-	linkHTML = new XMLSerializer().serializeToString(linkDOM);
-	// console.debug("processXbody: linkHTML after is: ", linkHTML);
+	console.debug("processXbody: linkHTML before linkDOM is: ", linkHTML);
+	console.debug("processXbody: linkHTML before linkDOM is: ", linkDOM);
+	// linkHTML = new XMLSerializer().serializeToString(linkDOM);
+	linkHTML = linkDOM.documentElement.outerHTML;
+	console.debug("processXbody: linkHTML after is: ", linkHTML);
+*/
 
 	// Process content based on filter type
 	var Xfilter = feed.Xfilter;
@@ -2484,7 +2488,7 @@ function processXbody(art, xmlhttp, feed)
 	// Call transformImageURLs
 	try
 	{
-		if (gOptions.transformImageURLs && linkDOM && baseUri)
+		if (gOptions.transformImageURLs)
 		{
 			var tempNode = document.createElement('div');
 			tempNode.textContent = artText; // Convert artText to a DOM node
