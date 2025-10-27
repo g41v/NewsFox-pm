@@ -2694,15 +2694,14 @@ function doSearch()
 	else gSearchValue = "";
 }
 
-// Queue getXbody for all selected articles that are not already extended
+// Queue getXbody for all selected articles that have not been extended yet
 function getXbodySelectedArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
 	for (var i = 0; i < gCollect.size(); i++)
 	{
 		if (
-			arttree.view.selection.isSelected(i) &&
-			(!gCollect.get(i).Xtend || !gCollect.get(i).Xbody) // Only queue if not already extended
+			arttree.view.selection.isSelected(i) && !gCollect.get(i).Xtend // Only queue if not already extended
 		)
 		{
 			getXbodyQueue(gCollect.get(i), gCollect.getFeed(i));
