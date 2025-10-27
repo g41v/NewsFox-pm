@@ -58,8 +58,17 @@ var timeList = new Array();
 // (only one request per host at a time to prevent server overload)
 var feedHostsInProcess = new Map();
 
-// Queue for feeds that were skipped due to host conflicts
+// Queue for feed requests deferred due to host conflicts (stores full request params)
 var skippedFeedsQueue = new Array();
+
+// Returns current number of in-flight feed requests based on timeList semantics
+function getInFlightFeedRequestsCount()
+{
+	var now = Date.now();
+	var num = 0;
+	for (var i=0; i<timeList.length; i++) num += 1*((now - timeList[i].time + 1) < gOptions.renewTimeout);
+	return num;
+}
 
 /**
  * Retries feeds that were skipped due to host conflicts.
@@ -68,35 +77,30 @@ var skippedFeedsQueue = new Array();
 function retrySkippedFeeds()
 {
 	if (skippedFeedsQueue.length === 0) return;
-	
+
 	var now = Date.now();
-	
-	// Move skipped feeds back to the main queue if their hosts are no longer being processed
-	for (var i = skippedFeedsQueue.length - 1; i >= 0; i--)
+	var inFlight = getInFlightFeedRequestsCount();
+
+	// Attempt to dispatch deferred requests when their host is free and a thread slot is available
+	for (var i = skippedFeedsQueue.length - 1; i >= 0 && inFlight < gOptions.threads; i--)
 	{
-		var skippedFeed = skippedFeedsQueue[i];
-		var host = extractHostFromUrl(skippedFeed.url);
-		
-		// Check if feed has been waiting too long
-		if (now - skippedFeed.timestamp > gOptions.renewTimeout)
+		var req = skippedFeedsQueue[i];
+		var host = extractHostFromUrl(req.urlFeed);
+
+		// If request waited longer than renewTimeout, try again proactively
+		var waitedTooLong = (now - req.timestamp) > gOptions.renewTimeout;
+
+		if (waitedTooLong || !feedHostsInProcess.has(host))
 		{
-			// Force retry even if host is still being processed
-			gFeedsToCheck.unshift(skippedFeed.url);
+			// Remove from queue and (re)issue request; host guard inside doXMLHttpRequest will re-queue if still busy
 			skippedFeedsQueue.splice(i, 1);
-			logHostTracking("Forcing retry due to timeout", host, skippedFeed.url);
-			continue;
-		}
-		
-		if (!feedHostsInProcess.has(host))
-		{
-			// Host is no longer being processed, move back to main queue
-			gFeedsToCheck.unshift(skippedFeed.url);
-			skippedFeedsQueue.splice(i, 1);
-			logHostTracking("Retrying feed - host no longer busy", host, skippedFeed.url);
+			logHostTracking(waitedTooLong ? "Forcing retry due to timeout" : "Retrying feed - host no longer busy", host, req.urlFeed);
+			doXMLHttpRequest(req.urlFeed, req.urlSent, req.username, req.password, req.feedsToCheck, req.repeat);
+			inFlight = getInFlightFeedRequestsCount();
 		}
 	}
-	
-	// Schedule next retry if there are still skipped feeds
+
+	// Schedule next retry if there are still deferred requests
 	if (skippedFeedsQueue.length > 0)
 	{
 		setTimeout(retrySkippedFeeds, 1000); // Retry every second
@@ -190,24 +194,7 @@ function precheckFeed(gFeedsToCheck)
 	while(gFmodel.get(--i).url != url) if (i==0) precheckFeed(gFeedsToCheck);
 	var index = i;
 
-	// Check if this host is already being processed
-	var host = extractHostFromUrl(url);
-	if (feedHostsInProcess.has(host))
-	{
-		// Host is already being processed, skip this feed and add to retry queue
-		skippedFeedsQueue.push({ url: url, timestamp: Date.now() });
-		logHostTracking("Skipping feed due to host conflict", host, url);
-		
-		// Start retry mechanism if not already running
-		if (skippedFeedsQueue.length === 1)
-		{
-			setTimeout(retrySkippedFeeds, 1000);
-		}
-		
-		// Continue with the next feed
-		precheckFeed(gFeedsToCheck);
-		return;
-	}
+	// Host gating handled inside doXMLHttpRequest; continue to dispatch
 
 // TODO using this causes article pane to reset, checking feed with categories
 //     open is okay?, but may not be displaying all categories afterward
@@ -258,12 +245,33 @@ function doXMLHttpRequest(urlFeed,urlSent,username,password,gFeedsToCheck, repea
 {
 	// FF used to throw an xmlhttp error on file not found, but now returns OK
 	// from xmlhttp request
-	var httpRenewTimeout = setTimeout(addAnotherCheck, gOptions.renewTimeout);
-	
-	// Mark this host as being processed
+
+	// Host guard: if this host is busy, defer full request parameters
 	var host = extractHostFromUrl(urlFeed);
+	if (feedHostsInProcess.has(host))
+	{
+		// Queue full request parameters for later retry
+		skippedFeedsQueue.push({
+			urlFeed: urlFeed,
+			urlSent: urlSent,
+			username: username,
+			password: password,
+			feedsToCheck: gFeedsToCheck,
+			repeat: repeat,
+			timestamp: Date.now()
+		});
+		logHostTracking("Deferring request - host busy", host, urlFeed);
+		if (skippedFeedsQueue.length === 1)
+			setTimeout(retrySkippedFeeds, 1000);
+		return;
+	}
+
+	// Mark this host as being processed
 	feedHostsInProcess.set(host, true);
 	logHostTracking("Marking host as processed", host, urlFeed);
+
+	// Start renew timeout only when actually proceeding with request
+	var httpRenewTimeout = setTimeout(addAnotherCheck, gOptions.renewTimeout);
 	
 	if (urlFeed.substring(0,4) == "file")
 	{
@@ -789,6 +797,7 @@ function postRefresh()
 	document.getElementById("mfBcheck").removeAttribute("hidden");
 	document.getElementById("fBcancel").setAttribute("hidden",true);
 	document.getElementById("fBcheck").removeAttribute("hidden");
+	gCheckInProgress = false;
 	cancelCheck = false;
 	gFeedsToCheck = new Array();
 	gNFPause = false;
@@ -804,7 +813,6 @@ function postRefresh()
 		if(gOptions.notifyUponNew) reportRefreshResults();
 		if(gOptions.notifyUponNewSound) resultsSound();
 	}
-	gCheckInProgress = false;
 
 	// Clean up all host tracking when feed checking completes
 	feedHostsInProcess.clear();
@@ -1284,7 +1292,7 @@ function repairIt(xmlhttp)
 		httpText = httpText.replace(/&(?!amp;|quot;|lt;|gt;)/gm, '&amp;');
 		xml2 = domParser.parseFromString(httpText, "application/xml");
 	}
-
+ 
 	// Final check for parser errors
 	if (xml2.documentElement.localName.toLowerCase() == 'parsererror')
 	{
