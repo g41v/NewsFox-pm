@@ -333,6 +333,47 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 		case 200:  // OK
 			checkFeed(xmlhttp, gFeedsToCheck, urlFeed, urlSent, httpRenewTimeout);
 			break;
+		case 429:  // Too Many Requests - respect Retry-After and back off
+			// Determine retry delay from Retry-After header (seconds or HTTP-date)
+			var retryAfterHeader = xmlhttp.getResponseHeader("Retry-After");
+			var delayMs = 60000; // default to 60s if header missing or invalid
+			if (retryAfterHeader)
+			{
+				var seconds = parseInt(retryAfterHeader, 10);
+				if (!isNaN(seconds))
+				{
+					delayMs = Math.max(1000, seconds * 1000);
+				}
+				else
+				{
+					var retryDate = Date.parse(retryAfterHeader);
+					if (!isNaN(retryDate))
+					{
+						delayMs = Math.max(1000, retryDate - Date.now());
+					}
+				}
+			}
+			// Free the slot so other feeds can continue while we wait to retry
+			removeUrlFromTimeList(urlFeed);
+			if (null != httpRenewTimeout) clearTimeout(httpRenewTimeout);
+			try
+			{
+				// Provide user feedback that we're backing off
+				gFmodel.getFeedByURL(urlFeed).error = ERROR_SERVER_ERROR + "429 - Too Many Requests (retrying)";
+			}
+			catch (e)
+			{
+				// ignore
+			}
+			// Schedule a retry of the same request after the delay
+			setTimeout(function()
+			{
+				doXMLHttpRequest(urlFeed, urlSent, username, password, gFeedsToCheck, repeat + 1);
+			}, delayMs);
+			// Continue processing other feeds now
+			if (!cancelCheck)
+				addAnotherCheck();
+			break;
 		case 301:  // permanent redirect
 			feed.url = url2;
 			urlLookup = url2;
