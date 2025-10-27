@@ -177,7 +177,7 @@ function AppOptions()
 		this.fixyoutube1 = NFgetPref("advanced.fixyoutube1", "bool", true);
 		this.transformImageURLs = NFgetPref("advanced.transformImageURLs", "bool", true);
 		this.processLazyLoading = NFgetPref("advanced.processLazyLoading", "bool", true);
-		this.getXbodyDelay = NFgetPref("advanced.getXbodyDelay", "int", 0);
+		this.getXbodyDelay = NFgetPref("advanced.getXbodyDelay", "int", 1000);
 		this.fixMailto = NFgetPref("advanced.fixMailto", "bool", true);
 		this.defaultXfilterIsWeb = NFgetPref("advanced.defaultXfilterIsWeb", "bool", false);
 		this.linuxNoDragDrop = NFgetPref("advanced.linuxNoDragAndDrop", "bool", true);

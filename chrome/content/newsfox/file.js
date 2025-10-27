@@ -1793,103 +1793,108 @@ function entityDecode(aStr)
 
 // Queue to hold xbody requests
 let xbodyQueue = [];
-let isProcessingQueue = false;
-// Map to track hosts being processed
+// Map to track hosts currently being processed (only one request per host at a time)
 let hostsInProcess = new Map();
+// Counter to track the number of active parallel requests (across all hosts)
+let activeRequests = 0;
 
-// Function to handle the xbody queue and call getXbody
+/**
+ * Adds an xbody request to the queue and triggers processing.
+ * @param {Article} art - The article object to be extended with additional content.
+ * @param {Feed} feed - The feed object containing filter configuration settings.
+ */
 function getXbodyQueue(art, feed)
 {
 	// Add the request to the queue
 	xbodyQueue.push({ art, feed });
+	// Start or continue processing the queue
+	processXbodyQueue();
+}
 
-	// If not already processing, start processing the queue
-	if (!isProcessingQueue)
+/**
+ * Processes the xbody queue, allowing up to gOptions.threads parallel requests,
+ * but only one request per host at a time. When a request finishes, this function
+ * is called again (after a delay) to fill available slots.
+ */
+function processXbodyQueue()
+{
+	// While we have available threads and items in the queue
+	while (
+		activeRequests < gOptions.threads &&
+		xbodyQueue.length > 0
+	)
 	{
-		isProcessingQueue = true; // Set flag to indicate processing
-		getXbody(); // Start processing the queue
+		// Find the next item whose host is not currently being processed
+		let nextItemIndex = -1;
+		let nextHost = "";
+		for (let i = 0; i < xbodyQueue.length; i++)
+		{
+			const item = xbodyQueue[i];
+			let host = "";
+			try
+			{
+				host = new URL(item.art.link).hostname;
+			}
+			catch (e)
+			{
+				// Fallback: use the full URL if hostname extraction fails
+				host = item.art.link;
+			}
+			if (!hostsInProcess.has(host))
+			{
+				nextItemIndex = i;
+				nextHost = host;
+				break;
+			}
+		}
+		if (nextItemIndex === -1)
+		{
+			// No available host, break out of the loop
+			break;
+		}
+
+		// Mark this host as being processed and increment active request count
+		const { art, feed } = xbodyQueue.splice(nextItemIndex, 1)[0];
+		hostsInProcess.set(nextHost, true);
+		activeRequests++;
+
+		// Start the request asynchronously
+		getXbodyForItem(art, feed, nextHost)
+			.catch(() => {}) // Error already handled in getXbodyForItem
+			.finally(() =>
+			{
+				// When done, free up the host and decrement active request count
+				hostsInProcess.delete(nextHost);
+				activeRequests--;
+				// Continue processing the queue after a configurable delay
+				setTimeout(processXbodyQueue, gOptions.getXbodyDelay);
+			});
 	}
 }
 
 /**
-* Fetches and processes extended content for an article.
-* @param {Article} art - The article object to be extended with additional content.
-* @param {Feed} feed - The feed object containing filter configuration settings.
-* This function handles three main scenarios:
-* 1. Web filter case (XfilterType=3): Sets minimal "w" marker for web view rendering
-* 2. Image processing only: Processes images in article without fetching new content
-Side effects:
-- Sets art.Xtend to true
-- May set art.Xbody with processed content
-- May update UI via artTreeInvalidate()
-- May trigger articleSelected() if current article
-Error handling is delegated to processError() function for request failures.
-*/
-function getXbody()
+ * Fetches and processes extended content for an article (single request logic).
+ * Handles three main scenarios:
+ * 1. Web filter case (XfilterType=3): Sets minimal "w" marker for web view rendering
+ * 2. Image processing only: Processes images in article without fetching new content
+ * 3. Full content fetching: Fetches and processes extended content from the article link
+ *
+ * Side effects:
+ * - Sets art.Xtend to true
+ * - May set art.Xbody with processed content
+ * - May update UI via artTreeInvalidate()
+ * - May trigger articleSelected() if current article
+ * Error handling is delegated to processError() function for request failures.
+ *
+ * @param {Article} art - The article object to be extended with additional content.
+ * @param {Feed} feed - The feed object containing filter configuration settings.
+ * @param {string} currentHost - The host currently being processed (for cleanup).
+ */
+async function getXbodyForItem(art, feed, currentHost)
 {
-	if (xbodyQueue.length === 0)
-	{
-		isProcessingQueue = false; // No more requests to process
-		hostsInProcess.clear(); // Clear the hosts tracking
-		return;
-	}
-
-	// Find the next request that doesn't have its host already being processed
-	let nextItemIndex = -1;
-	for (let i = 0; i < xbodyQueue.length; i++)
-	{
-		const item = xbodyQueue[i];
-		const art = item.art;
-		let host = "";
-
-		// Try to extract the host from the article link
-		try
-		{
-			// Parse the URL to extract host
-			let url = new URL(art.link);
-			host = url.hostname;
-			// console.debug("getXbody: host is: ", host);
-		}
-		catch(e)
-		{
-			console.error("Error extracting host from URL: " + art.link, e.message);
-			host = art.link; // Use the full URL as fallback
-		}
-
-		// If this host is not currently being processed, select this item
-		if (!hostsInProcess.has(host))
-		{
-			nextItemIndex = i;
-			hostsInProcess.set(host, true);
-			break;
-		}
-	}
-
-	// If no suitable item was found, wait for currently processing hosts to complete
-	if (nextItemIndex === -1)
-	{
-		// We'll return and wait for the next call when a host completes
-		return;
-	}
-
-	// Process the selected item
-	const { art, feed } = xbodyQueue.splice(nextItemIndex, 1)[0];
 	art.Xtend = true;
 
-	// Store the host for cleanup when processing completes
-	let currentHost = "";
-	try
-	{
-		let url = new URL(art.link);
-		currentHost = url.hostname;
-	}
-	catch(e)
-	{
-		console.error("Error extracting host in processing:", e.message);
-		currentHost = art.link;
-	}
-
-	// Special case handling without fetching
+	// Special case: Web filter, no fetch needed
 	if (feed.XfilterType == 3 || (gOptions.defaultXfilterIsWeb && feed.XfilterType == -1))
 	{
 		art.Xbody = "w";
@@ -1899,91 +1904,79 @@ function getXbody()
 		{
 			articleSelected();
 		}
-
-		hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
-		setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after configurable delay
-		return Promise.resolve(); // Resolve immediately
+		return;
 	}
 
-	// Image processing only case
+	// Special case: Image processing only, no fetch needed
 	if (feed.XfilterImages && !feed.Xfilter)
 	{
 		postProcessImages(art.body, art, feed);
-		artTreeInvalidate(); // Update the UI to reflect that images have been processed
-
-		hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
-		setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after configurable delay
-		return Promise.resolve(); // Resolve after processing images
+		artTreeInvalidate();
+		return;
 	}
-	else
+
+	// Full content fetching case
+	return new Promise((resolve, reject) =>
 	{
-		// Full content fetching case
-		return new Promise((resolve, reject) =>
+		let xmlhttp;
+		try
 		{
-			try
+			xmlhttp = new XMLHttpRequest();
+			xmlhttp.open("GET", art.link, true);
+
+			// Handle MIME type settings
+			if (art.XfilterMimeType)
 			{
-				var xmlhttp = new XMLHttpRequest();
-				xmlhttp.open("GET", art.link, true);
-
-				// Handle MIME type settings
-				if (art.XfilterMimeType)
-				{
-					xmlhttp.overrideMimeType("text/html; charset=" + art.XfilterMimeType);
-				}
-				else if (feed.XfilterMimeType &&
-						 feed.XfilterMimeType != AUTO_MIMETYPE &&
-						 feed.XfilterMimeType != TEST_MIMETYPE)
-				{
-					xmlhttp.overrideMimeType("text/html; charset=" + feed.XfilterMimeType);
-				}
-				else
-				{
-					xmlhttp.overrideMimeType("text/html");
-				}
-
-				// Store a reference to the host for cleanup in callbacks
-				const hostRef = currentHost;
-
-				// Set a timeout for the request
-				const timeoutId = setTimeout(() => {
-					xmlhttp.abort(); // Abort the request
-					console.error(`Request timed out for host: ${hostRef}`);
-					hostsInProcess.delete(hostRef); // Remove host from tracking
-					setTimeout(getXbody, gOptions.getXbodyDelay); // Continue processing queue after delay
-					reject(new Error("Request timed out for host: " + hostRef)); // Reject the promise
-				}, gOptions.renewTimeout); // Use the configured timeout value
-
-				xmlhttp.onload = function()
-				{
-					clearTimeout(timeoutId); // Clear the timeout on successful load
-					checkContentType(art, xmlhttp, feed);
-					artTreeInvalidate(); // Update the UI to reflect the successful content fetch
-					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
-					setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
-					resolve(); // Resolve the promise
-				};
-
-				xmlhttp.onerror = function()
-				{
-					clearTimeout(timeoutId); // Clear the timeout on error
-					processError(art, xmlhttp, feed);
-					hostsInProcess.delete(hostRef); // Remove host from tracking and continue with queue
-					setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
-					reject(new Error("Request failed for host: " + hostRef)); // Reject the promise
-				};
-
-				xmlhttp.send(null);
+				xmlhttp.overrideMimeType("text/html; charset=" + art.XfilterMimeType);
 			}
-			catch(e)
+			else if (
+				feed.XfilterMimeType &&
+				feed.XfilterMimeType != AUTO_MIMETYPE &&
+				feed.XfilterMimeType != TEST_MIMETYPE
+			)
 			{
-				console.error("Error in getXbody:", e.message);
+				xmlhttp.overrideMimeType("text/html; charset=" + feed.XfilterMimeType);
+			}
+			else
+			{
+				xmlhttp.overrideMimeType("text/html");
+			}
+
+			// Set a timeout for the request using gOptions.renewTimeout
+			const timeoutId = setTimeout(() =>
+			{
+				xmlhttp.abort();
+				console.error(`Request timed out for host: ${currentHost}`);
 				processError(art, xmlhttp, feed);
-				hostsInProcess.delete(currentHost); // Remove host from tracking and continue with queue
-				setTimeout(getXbody, gOptions.getXbodyDelay); // Use the configurable delay
-				reject(new Error("Error in getXbody: " + e.message)); // Reject the promise
+				reject(new Error("Request timed out for host: " + currentHost));
+			}, gOptions.renewTimeout);
+
+			xmlhttp.onload = function ()
+			{
+				clearTimeout(timeoutId);
+				checkContentType(art, xmlhttp, feed);
+				artTreeInvalidate(); // Update the UI to reflect the successful content fetch
+				resolve();
+			};
+
+			xmlhttp.onerror = function ()
+			{
+				clearTimeout(timeoutId); // Clear the timeout on error
+				processError(art, xmlhttp, feed);
+				reject(new Error("Request failed for host: " + currentHost));
+			};
+
+			xmlhttp.send(null);
+		}
+		catch (e)
+		{
+			if (xmlhttp)
+			{
+				processError(art, xmlhttp, feed);
 			}
-		});
-	}
+			reject(new Error("Error in getXbody: " + e.message));
+		}
+	});
 }
 
 function processError(art, xmlhttp, feed)

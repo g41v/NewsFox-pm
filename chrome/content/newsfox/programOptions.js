@@ -175,7 +175,7 @@ function doAccept()
 
 	// Read the getXbody delay value from the input field
 	val = parseInt(document.getElementById("pOgetXbodyDelay").value); // Convert to integer
-	if ( val < 0 || isNaN(val)) val = 0;
+	if ( val < 0 || isNaN(val)) val = 1000;
 	gOpt.getXbodyDelay = val
 
 	gOpt.bookmarkSync = document.getElementById("pOsync").checked;
