@@ -756,12 +756,12 @@ function doesArticleExist(feed, item)
 			feed.get(i).toRemove = false;
 			return true;
 		}
-		for (var i=0; i<feed.deletedsize(); i++)
-			if (feed.deletedget(i).id == id)
-				{
-					feed.deletedget(i).toRemove = false;
-					return true;
-				}
+	for (var i=0; i<feed.deletedsize(); i++)
+		if (feed.deletedget(i).id == id)
+		{
+			feed.deletedget(i).toRemove = false;
+			return true;
+		}
 	return false;
 }
 
@@ -797,11 +797,7 @@ function downloadIcon(feed)
 			if (feed.homepage != null && feed.homepage != "")
 			{
 				// Prepare fallback favicon URL
-				let fallbackFavicon = feed.homepage.replace("index.html", ""); // console.debug replace string with ""
-				if (fallbackFavicon.charAt(fallbackFavicon.length - 1) !== "/")
-				{
-					fallbackFavicon += "/";
-				}
+				let fallbackFavicon = getBaseDomain(feed.homepage);
 				fallbackFavicon += "favicon.ico";
 
 				// Prepare file for saving icon
@@ -859,7 +855,7 @@ function downloadIcon(feed)
 								// Use resolveUrl function to get absolute URL
 								// const absoluteFaviconUrl = resolveUrl(href.replace("chrome://newsfox", ""), feed.homepage);
 								const absoluteFaviconUrl = resolveUrl(href, feed.homepage);
-								console.debug("absolute favicon URL: ", href, feed.homepage, absoluteFaviconUrl);
+								// console.debug("absolute favicon URL: ", href, feed.homepage, absoluteFaviconUrl);
 
 								// Validate URL
 								if (!absoluteFaviconUrl || 

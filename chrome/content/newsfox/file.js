@@ -213,29 +213,35 @@ function getTextView(art, feed)
 	var body = art.body;
 	if (art.Xtend && art.Xbody.length > 0) body = art.Xbody;
 
-	// Remove <form> elements
-	body = body.replace(/<\/?form[^>]*?>/gi, "");
-
-	// Remove <input> elements
-	body = body.replace(/<input[^>]*?\/?>/gi, "");
+	// Filter out elements from body using regex
+	body = filterArticle(body);
 
 	// Get the content as an XHTML body element
+	// console.debug("getTextView: artURI value is: ", artURI);
 	var p = getXhtmlBody(body, "p", doc, artURI, feed.getStyle(), tagsToRemove);
 
 	/*
 	// Process lazy loading at display time
-	if (gOptions.processLazyLoading) {
-		try {
-			// Use the most specific baseUri available
-			var baseUriToUse = art.link;
+	if (gOptions.processLazyLoading)
+	{
+		try
+		{
+			// Use the most specific baseuri available
+			var baseUriToUse = getBaseDomain(art.link);
+			// console.debug("Processing lazy loading at display time with baseUriToUse: ", baseUriToUse);
 
-			if (baseUriToUse) {
+			if (baseUriToUse)
+			{
 				console.debug("Processing lazy loading in getTextView with baseUri:", baseUriToUse);
 				processLazyLoading(p, baseUriToUse);
-			} else {
+			}
+			else
+			{
 				console.warn("Skipping lazy loading processing: No valid baseUri available");
 			}
-		} catch (e) {
+		}
+		catch (e)
+		{
 			console.error("Error processing lazy loading in getTextView:", e.message, e.stack);
 			// Continue with display even if lazy loading processing fails
 		}
@@ -356,7 +362,46 @@ function getXhtmlBody(body, tag, doc, artURI, style, tagsToRemove)
 	// Add URL resolution before XML parsing
 	if (artURI)
 	{
-		body = fixRelativeLinks(body, artURI.spec);
+		body = fixRelativeLinks(body, artURI.prePath);
+	}
+
+	// Filter out elements from body using regex
+	body = filterArticle(body)
+
+	// Call transformImageURLs
+	try
+	{
+		if (gOptions.transformImageURLs)
+		{
+			var tempNode = document.createElement('div');
+			tempNode.textContent = body; // Convert body to a DOM node
+			transformImageURLs(tempNode, artURI.prePath, 0);
+			// console.debug("Processing transformImageURLs in getXhtmlBody with baseUri:", artURI.prePath);
+			body = tempNode.textContent; // Update the body after transformed content
+		}
+	}
+	catch (e)
+	{
+		console.error("Error transforming image URLs:", e.message);
+		// Continue processing even if transformation fails
+	}
+
+	// Call processLazyLoading
+	if (gOptions.processLazyLoading)
+	{
+		try
+		{
+			var tempNode = document.createElement('div');
+			tempNode.textContent = body; // Convert body to a DOM node
+			processLazyLoading(tempNode, artURI.prePath);
+			console.debug("Processing lazy loading in getXhtmlBody with baseUri:", artURI.prePath);
+			body = tempNode.textContent; // Update the body after processLazyLoading
+		}
+		catch (e)
+		{
+			console.error("Error processing lazy loading in getTextView:", e.message, e.stack, e);
+			// Continue with display even if lazy loading processing fails
+		}
 	}
 
 	// DOMParser is broken: Firefox bug#429785, using artURI is a fix
@@ -1323,7 +1368,7 @@ function fileRead(file)
 	var output = scInputStream.read(-1);
 	scInputStream.close();
 	inputStream.close();
-	
+
 	// Handle UTF-8 conversion
 	var converter = Components.classes["@mozilla.org/intl/scriptableunicodeconverter"]
 		.createInstance(Components.interfaces.nsIScriptableUnicodeConverter);
@@ -1681,11 +1726,11 @@ function encodeHTML(s)
  */
 function decodeHTML(s)
 {
-	s = s.replace(new RegExp('&amp;'  ,'gi'), '&');
 	s = s.replace(new RegExp('&lt;'   ,'gi'), '<');
 	s = s.replace(new RegExp('&gt;'   ,'gi'), '>');
 	s = s.replace(new RegExp('&quot;' ,'gi'), '"');
 	s = s.replace(new RegExp('&acute;','gi'), '´');
+	s = s.replace(new RegExp('&amp;'  ,'gi'), '&'); //always decode the ampersand last
 	return s;
 }
 
@@ -1793,6 +1838,7 @@ function getXbody()
 			// Parse the URL to extract host
 			let url = new URL(art.link);
 			host = url.hostname;
+			// console.debug("getXbody: host is: ", host);
 		}
 		catch(e)
 		{
@@ -2071,64 +2117,32 @@ function processXbody(art, xmlhttp, feed)
 	linkHTML = linkHTML.replace(/[\n|\r|\t]/g, " ");
 	linkHTML = linkHTML.replace(/[\x00-\x1F]/g, "");
 
-	// Resolve baseUri early and ensure it's in the correct format
-	var baseUri = art.link;
-	try
-	{
-		if (baseUri && typeof baseUri === 'object' && baseUri.schemeIs)
-		{
-			baseUri = baseUri.schemeIs("file") ? baseUri : baseUri.specIgnoringRef;
-		}
-	}
-	catch (e)
-	{
-		console.error("Error processing initial baseUri:", e.message);
-		baseUri = art.link || null;
-	}
+	// Resolve baseUri early
+	var baseUri = getBaseDomain(art.link);
 
 	// Pre-process relative URLs in HTML before creating DOM
 	try
 	{
 		if (baseUri)
 		{
-			// console.debug("processXbody before baseUri: ", linkHTML);
+			// console.debug("processXbody before baseUri: ", linkHTML, baseUri);
 			linkHTML = fixRelativeLinks(linkHTML, baseUri);
 			// console.debug("processXbody after baseUri: ", linkHTML, baseUri);
 		}
 	}
 	catch (e)
 	{
-		console.error("Error in pre-DOM URL resolution:", e.message);
+		console.error("processXbody: Error in pre-DOM URL resolution:", e.message);
 	}
 
-	// Filter out CSS and font related elements from linkHTML using regex
-	try
-	{
-		// Remove <link> elements for stylesheets and fonts
-		linkHTML = linkHTML.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, "");
-		linkHTML = linkHTML.replace(/<link[^>]*rel\s*=\s*["']preload["'][^>]*>/gi, "");
-		linkHTML = linkHTML.replace(/<link[^>]*href\s*=\s*["'][^"']*\.css["'][^>]*>/gi, "");
-		linkHTML = linkHTML.replace(/<link[^>]*href\s*=\s*["'][^"']*\.(woff|woff2|ttf|eot|otf)["'][^>]*>/gi, "");
-
-		// Remove <style> elements
-		linkHTML = linkHTML.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-
-		// Remove <form> elements
-		linkHTML = linkHTML.replace(/<\/?form[^>]*?>/gi, "");
-
-		// Remove <input> elements
-		linkHTML = linkHTML.replace(/<input[^>]*?\/?>/gi, "");
-	}
-	catch (e)
-	{
-		console.error("Error filtering CSS/font elements from linkHTML:", e.message);
-	}
+	// Filter out elements from linkHTML using regex
+	linkHTML = filterArticle(linkHTML)
 
 	var linkDOM = getDomFromHtml(linkHTML);
 	var artText;
 	if (!linkDOM)
 	{
-		console.error("Failed to create DOM from linkHTML.");
+		console.error("processXbody: Failed to create DOM from linkHTML.");
 		return doError(art, new Error("Invalid HTML content"));
 	}
 
@@ -2257,7 +2271,7 @@ function processXbody(art, xmlhttp, feed)
 	}
 	catch (e)
 	{
-		console.error("Error processing base elements:", e.message);
+		console.error("processXbody: Error processing base elements:", e.message);
 	}
 
 	// Fix all URLs in DOM before filtering
@@ -2338,44 +2352,18 @@ function processXbody(art, xmlhttp, feed)
 	}
 	catch (e)
 	{
-		console.error("Error fixing links in DOM:", e.message);
+		console.error("processXbody: Error fixing links in DOM:", e.message);
 	}
 
 	// Extract the updated HTML from linkDOM (Is it Usefull???)
+	// console.debug("processXbody: linkHTML before linkDOM is: ", linkHTML);
 	linkHTML = new XMLSerializer().serializeToString(linkDOM);
+	// console.debug("processXbody: linkHTML after is: ", linkHTML);
 
 	// Process content based on filter type
 	var Xfilter = feed.Xfilter;
 	var filterType = feed.XfilterType;
 	if (Xfilter && filterType == -1) filterType = guessFilterType(Xfilter);
-
-	// We already have baseUri defined above - avoid redefinition
-	try
-	{
-		// Use baseUri which was properly defined in getXbody
-		if (!baseUri)
-		{
-			baseUri = art.link;
-		}
-
-		// Handle additional URI properties if this is an nsIURI object
-		if (baseUri && typeof baseUri === 'object' && baseUri.schemeIs)
-		{
-			baseUri = baseUri.schemeIs("file") ? baseUri : baseUri.specIgnoringRef;
-		}
-		else if (typeof baseUri === 'string')
-		{
-			// If it's already a string, we can use it as is
-			// console.debug("Using string baseUri for URL resolution:", baseUri);
-		}
-	}
-	catch (e)
-	{
-		console.error("Error processing baseUri for URL resolution:", e.message);
-		// Fall back to what we already have if there's an error
-		baseUri = art.link || null;
-		console.debug("Falling back to baseUri:", baseUri);
-	}
 
 	/**
 	 * Helper function to process lazy loading with proper error handling
@@ -2454,11 +2442,13 @@ function processXbody(art, xmlhttp, feed)
 //						if (pattern.test(els[i].className)) classElements[j++] = els[i];
 //					return classElements;
 //				}
+
 			var xfilterLINKDOM = ' var iframeEls = doc.getElementsByTagName("iframe"); var tmp; for (var i=0; i< iframeEls.length; i++) if (iframeEls[i].id == "hiddenDOMiframe") tmp = i; linkDOM = iframeEls[tmp].contentDocument; ';
-//    var iframeEls = doc.getElementsByTagName("iframe");
-//    var tmp; for (var i=0; i< iframeEls.length; i++)
-//      if (iframeEls[i].id == "hiddenDOMiframe") tmp = i;
-//    linkDOM = iframeEls[tmp].contentDocument;
+//		var iframeEls = doc.getElementsByTagName("iframe");
+//		var tmp; for (var i=0; i< iframeEls.length; i++)
+//			if (iframeEls[i].id == "hiddenDOMiframe") tmp = i;
+//		linkDOM = iframeEls[tmp].contentDocument;
+
 			var xfilterPre = xfilterGEBC + xfilterLINKDOM;
 
 			sandbox.cxf = Components.utils.cloneInto(xfilterPre + feed.Xfilter, sandbox);
@@ -2505,28 +2495,8 @@ function processXbody(art, xmlhttp, feed)
 		}
 	}
 
-	// Filter out CSS and font related elements from artText using regex
-	try
-	{
-		// Remove <link> elements for stylesheets and fonts
-		artText = artText.replace(/<link[^>]*rel\s*=\s*["']stylesheet["'][^>]*>/gi, "");
-		artText = artText.replace(/<link[^>]*rel\s*=\s*["']preload["'][^>]*>/gi, "");
-		artText = artText.replace(/<link[^>]*href\s*=\s*["'][^"']*\.css["'][^>]*>/gi, "");
-		artText = artText.replace(/<link[^>]*href\s*=\s*["'][^"']*\.(woff|woff2|ttf|eot|otf)["'][^>]*>/gi, "");
-
-		// Remove <style> elements
-		artText = artText.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "");
-
-		// Remove <form> elements
-		artText = artText.replace(/<\/?form[^>]*?>/gi, "");
-
-		// Remove <input> elements
-		artText = artText.replace(/<input[^>]*?\/?>/gi, "");
-	}
-	catch (e)
-	{
-		console.error("Error filtering CSS/font elements from artText:", e.message);
-	}
+	// Filter out elements from artText using regex
+	artText = filterArticle(artText);
 
 	// Call transformImageURLs
 	try
@@ -2536,7 +2506,7 @@ function processXbody(art, xmlhttp, feed)
 			var tempNode = document.createElement('div');
 			tempNode.textContent = artText; // Convert artText to a DOM node
 			// console.debug("Processing transformImageURLs in processXbody function");
-			transformImageURLs(tempNode, baseUri.spec, feed.XfilterType);
+			transformImageURLs(tempNode, baseUri, feed.XfilterType);
 			artText = tempNode.textContent; // Update the artText with transformed content
 		}
 	}
@@ -2555,10 +2525,13 @@ function processXbody(art, xmlhttp, feed)
 			// Check if content actually needs lazy loading processing
 			const needsLazyLoading = /\b(data-src|data-srcset|lazy-src|data-lazy|data-original|loading=["'](lazy|auto)["'])\s*=/i.test(artText);
 
-			if (needsLazyLoading) {
+			if (needsLazyLoading)
+			{
 				// console.debug("Processing lazy loading for filter type:", filterType);
 				artText = processLazyLoadingWithErrorHandling(artText, baseUri, `filter-${filterType}`);
-			} else {
+			}
+			else
+			{
 				// console.debug("No lazy loading attributes found, skipping processing");
 			}
 		}
@@ -2578,7 +2551,7 @@ function processXbody(art, xmlhttp, feed)
 	// Process images in artText
 	postProcessImages(artText, art, feed);
 
-	return artText;
+	// return artText;
 }
 
 function postProcessImages(artText, art, feed)
@@ -2634,7 +2607,9 @@ function getDataForImage(url, art, artText, imgText, feed)
 		}
 
 		// Properly resolve the URL
-		url = resolveUrl(url, art.link);
+		var baseUri = getBaseDomain(art.link);
+		url = resolveUrl(url, baseUri);
+		console.debug("getDataForImage: Resolved URL is: ", url);
 
 		var req = new XMLHttpRequest();
 		req.open('GET', url, true);
