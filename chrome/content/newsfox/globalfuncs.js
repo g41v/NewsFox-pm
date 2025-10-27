@@ -1187,6 +1187,55 @@ function processLazyLoading(node, baseuri)
 		// Get node type
 		var nType = node.getAttribute("type");
 
+		// Helper: detect common placeholder/spinner sources used by lazy loaders
+		function isPlaceholderSrc(srcValue, el)
+		{
+			// Guard
+			if (!srcValue)
+			{
+				return false;
+			}
+			// Data URI tiny images or inline SVGs used as shims
+			if (srcValue.indexOf("data:") === 0)
+			{
+				if (srcValue.indexOf("base64,") !== -1)
+				{
+					var contentStart = srcValue.indexOf(",") + 1;
+					var base64Content = srcValue.substring(contentStart);
+					// Heuristic: very small payload is likely a shim/spacer
+					if (base64Content.length < 1500)
+					{
+						return true;
+					}
+				}
+				// Inline SVG placeholders are typically small loader graphics
+				if (/svg|image\/svg\+xml/i.test(srcValue))
+				{
+					return true;
+				}
+			}
+			// Common filename/domain markers for placeholders
+			if (/(spinner|placeholder|transparent|blank|spacer)\.(svg|gif|png|webp)$/i.test(srcValue))
+			{
+				return true;
+			}
+			if (/\/spinner\.(svg|gif|png|webp)(\?|$)/i.test(srcValue))
+			{
+				return true;
+			}
+			// Heuristic: if element is marked lazy and has a lazy-src variant, treat current src as placeholder
+			if (el && el.hasAttribute && (el.hasAttribute("data-src") || el.hasAttribute("data-lazy-src") || el.hasAttribute("lazy-src")))
+			{
+				var cls = el.getAttribute("class") || "";
+				if (/\blazy(loaded|load|hidden)?\b/i.test(cls))
+				{
+					return true;
+				}
+			}
+
+			return false;
+		}
+
 		// Process based on content type
 		if (nType == "xhtml" || node.namespaceURI === XHTML)
 		{
@@ -1228,19 +1277,7 @@ function processLazyLoading(node, baseuri)
 					if (hasDataSrc && element.hasAttribute("src"))
 					{
 						var srcValue = element.getAttribute("src");
-						// Improved placeholder detection
-						if (srcValue.startsWith("data:"))
-						{
-							// Check if it's a base64 or SVG placeholder
-							if (srcValue.includes("base64") || srcValue.includes("svg"))
-							{
-								// Estimate the decoded size of the base64 content
-								var contentStart = srcValue.indexOf(",") + 1;
-								var base64Content = srcValue.substring(contentStart);
-								// If base64 content is small, it's likely a placeholder
-								srcIsPlaceholder = base64Content.length < 1000;
-							}
-						}
+						srcIsPlaceholder = isPlaceholderSrc(srcValue, element);
 					}
 
 					// Process each lazy loading pattern
@@ -1376,21 +1413,10 @@ function processLazyLoading(node, baseuri)
 					var srcMatch = modifiedTag.match(/src\s*=\s*["']([^"']+)["']/i);
 
 					var srcIsPlaceholder = false;
-					if (dataSrcMatch && srcMatch) {
+					if (srcMatch)
+					{
 						var srcValue = srcMatch[1];
-						// Improved placeholder detection
-						if (srcValue.startsWith("data:"))
-						{
-							// Check if it's a base64 or SVG placeholder
-							if (srcValue.includes("base64") || srcValue.includes("svg"))
-							{
-								// Estimate the decoded size of the base64 content
-								var contentStart = srcValue.indexOf(",") + 1;
-								var base64Content = srcValue.substring(contentStart);
-								// If base64 content is small, it's likely a placeholder
-								srcIsPlaceholder = base64Content.length < 1000;
-							}
-						}
+						srcIsPlaceholder = isPlaceholderSrc(srcValue, null);
 					}
 
 					// Process each lazy loading pattern
@@ -1482,7 +1508,26 @@ function processLazyLoading(node, baseuri)
 
 					return modifiedTag;
 				});
-
+/*
+				// Pass 2: unescape noscript fallbacks that contain escaped <img> HTML
+				try
+				{
+					hText = hText.replace(/<noscript>\s*([\s\S]*?)<\/noscript>/gi, function(m, inner)
+					{
+						var decoded = inner
+							.replace(/&lt;/g, "<")
+							.replace(/&gt;/g, ">")
+							.replace(/&amp;/g, "&")
+							.replace(/&quot;/g, '"')
+							.replace(/&#39;/g, "'");
+						return /<img\b/i.test(decoded) ? decoded : m;
+					});
+				}
+				catch (ne)
+				{
+					console.error("Error decoding <noscript> content:", ne.message);
+				}
+*/
 				node.textContent = hText;
 			} catch (e) {
 				console.error("Error processing HTML lazy loading:", e.message);
