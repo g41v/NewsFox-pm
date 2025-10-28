@@ -200,6 +200,7 @@
 			<menuitem label="&sCdeleteSel;" oncommand="deleteArticle();"/>
 			<menuitem id="getxbodySelected" label="Get Extended Body" oncommand="getXbodySelectedArticles();"/>
 			<menuitem id="clearxbodySelected" label="Clear Extended Body" oncommand="clearXbodySelectedArticles();"/>
+			<menuitem id="editTitleSelected" label="Edit Title" oncommand="editTitle();"/>
 		</popup>
 
 		<popup id="toolbarContext">

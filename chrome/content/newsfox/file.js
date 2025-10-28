@@ -1724,10 +1724,12 @@ function child(element, tagName)
 function encodeHTML(s)
 {
 	if (!s) return "";
-	s = s.replace(new RegExp('&','gi'), '&amp;');
-	s = s.replace(new RegExp('<','gi'), '&lt;');
-	s = s.replace(new RegExp('>','gi'), '&gt;');
-	s = s.replace(new RegExp('"','gi'), '&quot;');
+	// Strict XML escaping for reserved characters
+	s = s.replace(/&/g, '&amp;');
+	s = s.replace(/</g, '&lt;');
+	s = s.replace(/>/g, '&gt;');
+	s = s.replace(/"/g, '&quot;');
+	s = s.replace(/'/g, '&apos;');
 	return s;
 }
 
@@ -1736,11 +1738,14 @@ function encodeHTML(s)
  */
 function decodeHTML(s)
 {
-	s = s.replace(new RegExp('&lt;'   ,'gi'), '<');
-	s = s.replace(new RegExp('&gt;'   ,'gi'), '>');
-	s = s.replace(new RegExp('&quot;' ,'gi'), '"');
-	s = s.replace(new RegExp('&acute;','gi'), '´');
-	s = s.replace(new RegExp('&amp;'  ,'gi'), '&'); //always decode the ampersand last
+	if (!s) return "";
+	// Ordered to avoid double-unescape
+	s = s.replace(/&quot;/g, '"');
+	s = s.replace(/&apos;/g, '\'');
+	s = s.replace(/&lt;/g, '<');
+	s = s.replace(/&gt;/g, '>');
+	s = s.replace(/&acute;/gi, '´');
+	s = s.replace(/&amp;/g, '&'); //always decode the ampersand last
 	return s;
 }
 

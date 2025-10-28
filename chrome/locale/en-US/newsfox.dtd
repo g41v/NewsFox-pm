@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Mark selected as read">
 <!ENTITY markSelAsUnread "Mark selected as unread">
+<!ENTITY editTitle.menu "Edit Title">
+<!ENTITY editTitle.title "Edit Title">
+<!ENTITY editTitle.prompt "Enter a new title:">

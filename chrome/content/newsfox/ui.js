@@ -21,6 +21,7 @@
  * Contributor(s):
  *   Andrey Gromyko <andrey@gromyko.name>
  *   Ron Pruitt <wa84it@gmail.com>
+ *   Големия Злодей https://github.com/g41v/NewsFox-pm/
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -921,6 +922,45 @@ function selectAllArticles()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
 	arttree.view.selection.selectAll();
+}
+
+/**
+ * Open a dialog to edit the selected article's title with XML CDATA validation.
+ * Applies changes immediately to the UI and persists to storage.
+ */
+function editTitle()
+{
+	var arttree = document.getElementById("newsfox.articleTree");
+	if (arttree.currentIndex == -1) return;
+	var selectedIndex = -1;
+	for (var i = 0; i < gCollect.size(); i++)
+	{
+		if (arttree.view.selection.isSelected(i))
+		{
+			selectedIndex = i;
+			break;
+		}
+	}
+	if (selectedIndex == -1) return;
+
+	var art = gCollect.get(selectedIndex);
+	var params = { ok:false, title: art.title };
+	var win = window.openDialog("chrome://newsfox/content/editTitle.xul",
+		"newsfox-edit-title","chrome,centerscreen,modal", params);
+
+	if (params.ok)
+	{
+		// Apply sanitized title
+		art.title = params.newTitle;
+		// Mark feed changed and persist minimal scope
+		var tree = document.getElementById("newsfox.feedTree");
+		var feed = gFmodel.get(gIdx.feed[tree.currentIndex]);
+		feed.changed = true;
+		updateFeeds(false);
+		// Refresh UI
+		artTreeInvalidate();
+		articleSelected();
+	}
 }
 
 function tagEdit()
@@ -2511,6 +2551,18 @@ function unflagSelectedArticles()
 function onArtMenuShowing(menu)
 {
 	var arttree = document.getElementById("newsfox.articleTree");
+	// Localize dynamic labels each time menu is shown
+	try
+	{
+		var sb = document.getElementById("newsfox-string-bundle");
+		var editLabel = sb.getString('editTitle.menu');
+		var editNode = document.getElementById('editTitleSelected');
+		if (editNode && editLabel) editNode.setAttribute('label', editLabel);
+	}
+	catch (e)
+	{
+		// ignore if bundle missing or key absent
+	}
 	var cnt = arttree.view.selection.count;
 	var cnt2 = 0;
 	// Count how many selected articles are already read
@@ -2626,6 +2678,16 @@ function onArtMenuShowing(menu)
 					}
 				}
 				if (showClearXbody)
+				{
+					children[i].removeAttribute("hidden");
+				}
+				else
+				{
+					children[i].setAttribute("hidden", true);
+				}
+				break;
+			case "editTitleSelected": // Show 'Edit Title' only when exactly one article is selected
+				if (cnt == 1)
 				{
 					children[i].removeAttribute("hidden");
 				}

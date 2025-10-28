@@ -1,0 +1,124 @@
+<?xml version="1.0"?>
+<!-- ***** BEGIN LICENSE BLOCK *****
+ - Version: LGPL 2.1
+ -
+ - Software distributed under the License is distributed on an "AS IS" basis,
+ - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ - for the specific language governing rights and limitations under the
+ - License.
+ -
+ - The Original Code is for NewsFox.
+ -
+ - The Initial Developer of the Code is Големия Злодей
+ - https://github.com/g41v/NewsFox-pm/
+ - Copyright (C) 2025+. All Rights Reserved.
+ -
+ - ***** END LICENSE BLOCK ***** -->
+
+<!-- Simple dialog to edit Title -->
+<?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
+<?xml-stylesheet href="chrome://newsfox/skin/" type="text/css"?>
+
+<!DOCTYPE dialog [
+  <!ENTITY % newsfoxDTD SYSTEM "chrome://newsfox/locale/newsfox.dtd"> %newsfoxDTD;
+  <!ENTITY % commonDTD SYSTEM "chrome://newsfox/locale/common.dtd"> %commonDTD;
+]>
+
+<dialog id="editTitleDlg" title="Edit Title"
+    xmlns="http://www.mozilla.org/keymaster/gatekeeper/there.is.only.xul"
+    buttons="accept,cancel"
+    onload="init();"
+    ondialogaccept="return doAccept();"
+    ondialogcancel="return true;">
+
+	<script src="globalfuncs.js"/>
+	<script type="application/javascript"><![CDATA[
+	// Parameters: { ok:false, title:"" }
+	var gParams = window.arguments && window.arguments[0] ? window.arguments[0] : { ok:false, title:"" };
+	function NF_SB()
+	{
+		return document.getElementById("newsfox-string-bundle");
+	}
+    function init()
+	{
+        // Localize UI from stringbundle with safe fallbacks
+        try
+        {
+            var sb = NF_SB();
+            document.title = sb.getString('editTitle.title');
+            document.getElementById('promptLabel').value = sb.getString('editTitle.prompt');
+            var dlg = document.documentElement;
+            dlg.getButton('accept').label = sb.getString('editTitle.ok');
+            dlg.getButton('cancel').label = sb.getString('editTitle.cancel');
+        }
+        catch (e)
+        {
+            // Fallbacks already present in markup/defaults
+        }
+        document.getElementById("titleInput").value = gParams.title || "";
+		updateValidation();
+		document.getElementById("titleInput").addEventListener("input", updateValidation, false);
+		document.getElementById("titleInput").addEventListener("keypress", function(e)
+		{
+			if (e.keyCode == 13)
+			{
+				if (doAccept()) window.close();
+			}
+			else if (e.keyCode == 27)
+			{
+				window.close();
+			}
+		}, false);
+		document.getElementById("titleInput").focus();
+	}
+	function sanitizeTitle(str)
+	{
+		// Reject empty or whitespace-only titles
+		if (!str || str.replace(/\s/g, "") === "") return { ok:false, msg: NF_SB().getString('editTitle.error.empty') };
+		// Pass through verbatim; CDATA handling occurs during save via toUTF8
+		return { ok:true, value: str.trim() };
+	}
+	function updateValidation()
+	{
+		var val = document.getElementById("titleInput").value.trim();
+		var res = sanitizeTitle(val);
+		var msgNode = document.getElementById("errorMsg");
+		var dlg = document.documentElement;
+		if (!res.ok)
+		{
+			msgNode.value = res.msg;
+			dlg.getButton("accept").disabled = true;
+		}
+		else
+		{
+			msgNode.value = "";
+			dlg.getButton("accept").disabled = false;
+		}
+	}
+	function doAccept()
+	{
+		var val = document.getElementById("titleInput").value.trim();
+		var res = sanitizeTitle(val);
+		if (!res.ok)
+		{
+			updateValidation();
+			return false;
+		}
+		gParams.ok = true;
+		gParams.newTitle = res.value;
+		return true;
+	}
+	]]></script>
+
+	<stringbundleset id="stringbundleset">
+		<stringbundle id="newsfox-string-bundle" src="chrome://newsfox/locale/newsfox.properties"/>
+	</stringbundleset>
+
+	<vbox flex="1" style="min-width: 420px;">
+		<label id="promptLabel" value="Enter a new title:"/>
+		<textbox id="titleInput" flex="1"/>
+		<label id="errorMsg" class="text-link" value="" style="color: red;"/>
+	</vbox>
+</dialog>
+
+
