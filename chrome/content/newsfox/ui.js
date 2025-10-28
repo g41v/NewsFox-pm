@@ -925,13 +925,15 @@ function selectAllArticles()
 }
 
 /**
- * Open a dialog to edit the selected article's title with XML CDATA validation.
- * Applies changes immediately to the UI and persists to storage.
+ * Resolve the currently selected article and its owning feed, regardless of
+ * whether the current view is a single-feed view or a multi-feed folder view.
+ *
+ * @returns {{index:number, art:Object, feed:Object}|null}
  */
-function editTitle()
+function getSelectedArticleContext()
 {
 	var arttree = document.getElementById("newsfox.articleTree");
-	if (arttree.currentIndex == -1) return;
+	if (arttree.currentIndex == -1) return null;
 	var selectedIndex = -1;
 	for (var i = 0; i < gCollect.size(); i++)
 	{
@@ -941,25 +943,68 @@ function editTitle()
 			break;
 		}
 	}
-	if (selectedIndex == -1) return;
+	if (selectedIndex == -1) return null;
 
 	var art = gCollect.get(selectedIndex);
+	// Prefer collection-provided feed resolution (works for folder views)
+	var feed = null;
+	try
+	{
+		if (typeof gCollect.getFeed === 'function')
+		{
+			feed = gCollect.getFeed(selectedIndex);
+		}
+	}
+	catch(e){}
+	// Fallback to the feed tree's current feed if needed
+	if (!feed)
+	{
+		var tree = document.getElementById("newsfox.feedTree");
+		feed = gFmodel.get(gIdx.feed[tree.currentIndex]);
+	}
+	return { index: selectedIndex, art: art, feed: feed };
+}
+
+/**
+ * Open a dialog to edit the selected article's title with XML CDATA validation.
+ * Applies changes immediately to the UI and persists to storage.
+ */
+function editTitle()
+{
+	var ctx = getSelectedArticleContext();
+	if (!ctx) return;
+	var art = ctx.art;
 	var params = { ok:false, title: art.title };
 	var win = window.openDialog("chrome://newsfox/content/editTitle.xul",
 		"newsfox-edit-title","chrome,centerscreen,modal", params);
 
 	if (params.ok)
 	{
-		// Apply sanitized title
+		// Apply escaped title (entity-escaped, no CDATA)
 		art.title = params.newTitle;
-		// Mark feed changed and persist minimal scope
-		var tree = document.getElementById("newsfox.feedTree");
-		var feed = gFmodel.get(gIdx.feed[tree.currentIndex]);
-		feed.changed = true;
-		updateFeeds(false);
+		// Mark the owning feed changed and persist only that feed
+		try
+		{
+			if (ctx.feed)
+			{
+				ctx.feed.changed = true;
+				saveFeedUnload(ctx.feed);
+			}
+			else
+			{
+				// Fallback to minimal update if feed can't be resolved
+				updateFeeds(false);
+			}
+		}
+		catch (e)
+		{
+			updateFeeds(false);
+		}
 		// Refresh UI
 		artTreeInvalidate();
 		articleSelected();
+		// In group/folder context, ensure unread counts and state are consistent
+		feedTreeInvalidate();
 	}
 }
 
