@@ -21,6 +21,7 @@
  * Contributor(s):
  *   Andrey Gromyko <andrey@gromyko.name>
  *   Ron Pruitt <wa84it@gmail.com>
+ *   Големия Злодей https://github.com/g41v/NewsFox-pm/
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -36,12 +37,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const VERSION = "1.0.9.4.1";
+const VERSION = "1.1.0.0.0";
 const NEWSFOX = "NewsFox";
-const NEWSFOX_RSS = "http://newsfox.mozdev.org/rss/rss.xml?startup";
+const NEWSFOX_RSS = "https://github.com/g41v/NewsFox-pm/releases.atom?startup";
 const NEWSFOX_DATE = "April 15, 2003 8:01 PM";
 const NF_URI = "chrome://newsfox/content/newsfox.xul?bkmk";
-const NFINFO = "http://newsfox.mozdev.org/";
+const NFINFO = "https://github.com/g41v/NewsFox-pm/";
 const NFSOUND = "NFsound.wav";
 const LONG_DATE_STYLE = 2;
 const ERROR_OK = "0";

@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Märk markerade objekt som lästa">
 <!ENTITY markSelAsUnread "Märk markerade objekt som olästa">
+<!ENTITY editTitle.menu "Redigera titel">
+<!ENTITY editTitle.title "Redigera titel">
+<!ENTITY editTitle.prompt "Ange en ny titel:">

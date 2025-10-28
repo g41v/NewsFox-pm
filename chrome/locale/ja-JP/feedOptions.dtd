@@ -21,5 +21,5 @@
 <!ENTITY filterJSvar2 "リンクHTMLは記事リンクページのテキスト/htmlを含んでいます。">
 <!ENTITY filterJSvar3 "getElementsByClass（クラス、タグ、ノード）は、所定のノードに含まれる伝えられたタグとクラスで多数のすべてのhtml要素を返します。">
 <!ENTITY filterMime "文字コードを無効にする(+ for auto, &gt; for test, or charset)">
-<!ENTITY filterInfo2 "You must enter a filter or images will be downloaded for the current article, not an html page. To use the default filter press the backspace key.">
+<!ENTITY filterInfo2 "フィルターを入力してください。入力がない場合、HTMLページではなく現在の記事の画像がダウンロードされます。デフォルトのフィルターを使用するには、バックスペースキーを押してください。">
 <!ENTITY never "決してしない">

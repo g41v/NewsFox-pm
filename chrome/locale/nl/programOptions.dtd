@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Feed-URL en bijwerktijden in bladwijzer wegschrijven">
 <!ENTITY spam "Interessefilter inschakelen">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Afbeeldings-URL's transformeren (zie tabblad Patronen)">
+<!ENTITY processLazyLoading "URL's met lazy loading verwerken">
+<!ENTITY getContentDelay "Haal de vertraging van de inhoud op (in milliseconden):">
 <!ENTITY globalTab "Algemeen">
 <!ENTITY feedTab "Feeds/Artikelen">
 <!ENTITY generalTab "Algemeen">
 <!ENTITY shortcutsTab "Snelkoppelingen">
 <!ENTITY keywordsTab "Sleutelwoorden">
+<!ENTITY patternsTab "Patronen">
+<!ENTITY add "Toevoegen">
+<!ENTITY edit "Bewerken">
+<!ENTITY remove "Verwijderen">
 <!ENTITY shortcuts.operationHeader "Operatie">
 <!ENTITY shortcuts.select "Selecteer een rij en type een toetscombinatie in om een sneltoets in te stellen.">
 <!ENTITY shortcuts.warning "Veel sneltoetsen zijn al in gebruik en niet beschikbaar.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nieuw">
 <!ENTITY statusBarTextUnread "# ongelezen">
 <!ENTITY statusBarTextNone "geen">
+<!ENTITY sCpattern "Patroon:">
+<!ENTITY sCreplacement "Vervanging:">

@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Ausgewähltes als gelesen markieren">
 <!ENTITY markSelAsUnread "Ausgewähltes als ungelesen markieren">
+<!ENTITY editTitle.menu "Titel bearbeiten">
+<!ENTITY editTitle.title "Titel bearbeiten">
+<!ENTITY editTitle.prompt "Geben Sie einen neuen Titel ein:">

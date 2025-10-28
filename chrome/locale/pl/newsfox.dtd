@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Oznacz zaznaczone jako przeczytane">
 <!ENTITY markSelAsUnread "Oznacz zaznaczone jako nieprzeczytane">
+<!ENTITY editTitle.menu "Edytuj tytuł">
+<!ENTITY editTitle.title "Edytuj tytuł">
+<!ENTITY editTitle.prompt "Wprowadź nowy tytuł:">

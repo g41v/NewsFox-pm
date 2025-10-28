@@ -21,6 +21,7 @@
  * Contributor(s):
  *   Andrey Gromyko <andrey@gromyko.name>
  *   Ron Pruitt <wa84it@gmail.com>
+ *   Големия Злодей https://github.com/g41v/NewsFox-pm/
  *
  * Alternatively, the contents of this file may be used under the terms of
  * either the GNU General Public License Version 2 or later (the "GPL"), or
@@ -317,7 +318,7 @@ function AppOptions()
 			NFsetPref("advanced.wmodeOpaque", "bool", this.wmode);
 			NFsetPref("advanced.fixyoutube1", "bool", this.fixyoutube1);
 			NFsetPref("advanced.transformImageURLs", "bool", this.transformImageURLs);
-		NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
+			NFsetPref("advanced.processLazyLoading", "bool", this.processLazyLoading);
 		// Save URL patterns to preferences
 		try
 		{

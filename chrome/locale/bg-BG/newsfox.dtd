@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Маркиране на избраните като прочетени">
 <!ENTITY markSelAsUnread "Маркиране на избраните като непрочетени">
+<!ENTITY editTitle.menu "Редактиране на заглавие">
+<!ENTITY editTitle.title "Редактиране на заглавие">
+<!ENTITY editTitle.prompt "Въведете ново заглавие:">

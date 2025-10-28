@@ -32,14 +32,18 @@
 <!ENTITY favicons "小图标">
 <!ENTITY updateTimeToBookmark "将源地址和更新时间写入书签">
 <!ENTITY spam "启用收藏夹过滤器">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "转换图像URL（参见模式选项卡）">
+<!ENTITY processLazyLoading "处理延迟加载URL">
+<!ENTITY getContentDelay "获取内容延迟（单位：毫秒）:">
 <!ENTITY globalTab "全局">
 <!ENTITY feedTab "源/文章">
 <!ENTITY generalTab "常规">
 <!ENTITY shortcutsTab "快捷键">
 <!ENTITY keywordsTab "关键词">
+<!ENTITY patternsTab "模式">
+<!ENTITY add "添加">
+<!ENTITY edit "编辑">
+<!ENTITY remove "删除">
 <!ENTITY shortcuts.operationHeader "操作">
 <!ENTITY shortcuts.select "选择一行并键入一个快捷键以设置它的快捷键。">
 <!ENTITY shortcuts.warning "您的许多按键已被占用而不可用。">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "新项数量">
 <!ENTITY statusBarTextUnread "未读数量">
 <!ENTITY statusBarTextNone "无">
+<!ENTITY sCpattern "模式:">
+<!ENTITY sCreplacement "替换:">

@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favikony">
 <!ENTITY updateTimeToBookmark "Zapísať url kanála a aktualizovaný čas do záložky">
 <!ENTITY spam "Zapnúť filter">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Premeniť URL obrázkov (pozri kartu Vzory)">
+<!ENTITY processLazyLoading "Spracovanie URL adries s odloženým načítaním">
+<!ENTITY getContentDelay "Získať oneskorenie obsahu (v milisekundách):">
 <!ENTITY globalTab "Všeobecné">
 <!ENTITY feedTab "Kanál/Články">
 <!ENTITY generalTab "Všeobecné">
 <!ENTITY shortcutsTab "Klávesové skratky">
 <!ENTITY keywordsTab "Kľúčové slová">
+<!ENTITY patternsTab "Vzory">
+<!ENTITY add "Pridať">
+<!ENTITY edit "Upraviť">
+<!ENTITY remove "Odstrániť">
 <!ENTITY shortcuts.operationHeader "Úloha">
 <!ENTITY shortcuts.select "Vybrať riadok a vložiť kombináciu kláves.">
 <!ENTITY shortcuts.warning "Veľa klávesových kombinácií sa už používa a sú nedostupné.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nový">
 <!ENTITY statusBarTextUnread "# neprečítaný">
 <!ENTITY statusBarTextNone "žiadny">
+<!ENTITY sCpattern "Vzor:">
+<!ENTITY sCreplacement "Náhrada:">

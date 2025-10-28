@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Írja a hírfolyam url-t és frissítési időpontot a könyvjelzőbe">
 <!ENTITY spam "&quot;Érdekes&quot; szűrő engedélyezése">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Kép URL-ek átalakítása (lásd a Minták fület)">
+<!ENTITY processLazyLoading "Lusta betöltésű URL-ek feldolgozása">
+<!ENTITY getContentDelay "Tartalom késleltetés (milliszekundumban):">
 <!ENTITY globalTab "Általános">
 <!ENTITY feedTab "Hírfolyam/Cikk">
 <!ENTITY generalTab "Általános">
 <!ENTITY shortcutsTab "Gyorsbillentyűk">
 <!ENTITY keywordsTab "Kulcsszavak">
+<!ENTITY patternsTab "Minták">
+<!ENTITY add "Hozzáadás">
+<!ENTITY edit "Szerkesztés">
+<!ENTITY remove "Eltávolítás">
 <!ENTITY shortcuts.operationHeader "Működés">
 <!ENTITY shortcuts.select "Válassza ki a sort és írja be a billentyűkombinációt a billentyűleütés beállításához.">
 <!ENTITY shortcuts.warning "Sok billentyűleütés már használatban van és nem elérhető.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "db új">
 <!ENTITY statusBarTextUnread "db olvasatlan">
 <!ENTITY statusBarTextNone "nincs">
+<!ENTITY sCpattern "Minta:">
+<!ENTITY sCreplacement "Csere:">

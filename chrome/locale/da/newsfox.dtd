@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Marker valgte som læste">
 <!ENTITY markSelAsUnread "Marker valgte som ulæste">
+<!ENTITY editTitle.menu "Rediger titel">
+<!ENTITY editTitle.title "Rediger titel">
+<!ENTITY editTitle.prompt "Indtast en ny titel:">

@@ -32,14 +32,18 @@
 <!ENTITY favicons "Wyświetlaj ikony witryn">
 <!ENTITY updateTimeToBookmark "Zapisuj adres URL kanału i czas aktualizacji do zakładek">
 <!ENTITY spam "Włącz filtry zainteresowań">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Przekształcaj adresy URL obrazów (patrz zakładka Wzory)">
+<!ENTITY processLazyLoading "Proces lazy-loading adresów URL">
+<!ENTITY getContentDelay "Uzyskaj opóźnienie treści (w milisekundach):">
 <!ENTITY globalTab "Globalne">
 <!ENTITY feedTab "Kanały/Artykuły">
 <!ENTITY generalTab "Ogólne">
 <!ENTITY shortcutsTab "Skróty klawiaturowe">
 <!ENTITY keywordsTab "Słowa kluczowe">
+<!ENTITY patternsTab "Wzory">
+<!ENTITY add "Dodaj">
+<!ENTITY edit "Edytuj">
+<!ENTITY remove "Usuń">
 <!ENTITY shortcuts.operationHeader "Operacja">
 <!ENTITY shortcuts.select "Aby określić skrót, zaznacz wiersz i wprowadź kombinację klawiszy">
 <!ENTITY shortcuts.warning "Wiele skrótów jest już używanych i są niedostępne.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nowych">
 <!ENTITY statusBarTextUnread "# nieprzeczytanych">
 <!ENTITY statusBarTextNone "brak">
+<!ENTITY sCpattern "Wzór:">
+<!ENTITY sCreplacement "Wymiana:">

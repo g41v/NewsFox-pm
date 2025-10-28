@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favikoner">
 <!ENTITY updateTimeToBookmark "Skriv feed-url og tidspunkt for opdatering til bogmærke">
 <!ENTITY spam "Aktiver interessefilter">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Transformér billed-URL'er (se fanen Mønstre)">
+<!ENTITY processLazyLoading "Behandl URL'er med lazy loading">
+<!ENTITY getContentDelay "Hent indholdsforsinkelse (i millisekunder):">
 <!ENTITY globalTab "Globalt">
 <!ENTITY feedTab "Feeds/Artikler">
 <!ENTITY generalTab "Generelt">
 <!ENTITY shortcutsTab "Genveje">
 <!ENTITY keywordsTab "Nøgleord">
+<!ENTITY patternsTab "Mønstre">
+<!ENTITY add "Tilføj">
+<!ENTITY edit "Rediger">
+<!ENTITY remove "Fjern">
 <!ENTITY shortcuts.operationHeader "Handlinger">
 <!ENTITY shortcuts.select "Vælg en række og indtast en tastekombination for at sætte et tastetryk.">
 <!ENTITY shortcuts.warning "Mange tastetryk er allerede brugt og utilgængelige.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nye">
 <!ENTITY statusBarTextUnread "# ulæste">
 <!ENTITY statusBarTextNone "ingen">
+<!ENTITY sCpattern "Mønstre:">
+<!ENTITY sCreplacement "Udskiftning:">

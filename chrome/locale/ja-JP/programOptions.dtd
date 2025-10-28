@@ -32,14 +32,18 @@
 <!ENTITY favicons "ファビコン">
 <!ENTITY updateTimeToBookmark "フィードのURLと更新日時をブックマークに記入する">
 <!ENTITY spam "関心フィルタを有効にする">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "画像URLを変換する（パターンタブを参照）">
+<!ENTITY processLazyLoading "URLの遅延読み込みを処理する">
+<!ENTITY getContentDelay "コンテンツ遅延を取得（ミリ秒単位）:">
 <!ENTITY globalTab "全体">
 <!ENTITY feedTab "フィード/記事">
 <!ENTITY generalTab "一般">
 <!ENTITY shortcutsTab "ショートカット">
 <!ENTITY keywordsTab "キーワード">
+<!ENTITY patternsTab "パターン">
+<!ENTITY add "追加">
+<!ENTITY edit "編集">
+<!ENTITY remove "削除">
 <!ENTITY shortcuts.operationHeader "操作">
 <!ENTITY shortcuts.select "列を選んで、キーストロークをセットするためにキーの組み合わせを入力してください。">
 <!ENTITY shortcuts.warning "多くのキーストロークが、すでに使われて利用できません。">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "#新しい">
 <!ENTITY statusBarTextUnread "#未読">
 <!ENTITY statusBarTextNone "なし">
+<!ENTITY sCpattern "パターン:">
+<!ENTITY sCreplacement "代替品:">

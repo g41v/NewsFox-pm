@@ -32,14 +32,18 @@
 <!ENTITY favicons "網站圖示">
 <!ENTITY updateTimeToBookmark "將 Feed 網址和更新時間寫入至書籤">
 <!ENTITY spam "啟用興趣篩選">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "轉換圖片網址（參見「模式」標籤頁">
+<!ENTITY processLazyLoading "處理延遲載入的網址">
+<!ENTITY getContentDelay "取得內容延遲時間（單位：毫秒）:">
 <!ENTITY globalTab "全域設定">
 <!ENTITY feedTab "Feed/文章">
 <!ENTITY generalTab "一般">
 <!ENTITY shortcutsTab "快捷鍵">
 <!ENTITY keywordsTab "關鍵字">
+<!ENTITY patternsTab "圖案">
+<!ENTITY add "添加">
+<!ENTITY edit "編輯">
+<!ENTITY remove "移除">
 <!ENTITY shortcuts.operationHeader "操作">
 <!ENTITY shortcuts.select "選取一列，然後按下組合鍵來設定快捷鍵。">
 <!ENTITY shortcuts.warning "部份快捷可能會因為已被使用而無效。">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# 新的">
 <!ENTITY statusBarTextUnread "# 未閱讀">
 <!ENTITY statusBarTextNone "無">
+<!ENTITY sCpattern "圖案:">
+<!ENTITY sCreplacement "替換:">

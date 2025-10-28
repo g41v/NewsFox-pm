@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "标记选中项为已读">
 <!ENTITY markSelAsUnread "标记选中项为未读">
+<!ENTITY editTitle.menu "编辑标题">
+<!ENTITY editTitle.title "编辑标题">
+<!ENTITY editTitle.prompt "输入新标题：">

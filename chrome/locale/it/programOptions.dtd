@@ -32,14 +32,18 @@
 <!ENTITY favicons "Visualizza favicon">
 <!ENTITY updateTimeToBookmark "Scrivi l&apos;Url del feed e la sua data di aggiornamento nel segnalibro">
 <!ENTITY spam "Attiva il filtro &apos;Interesse&apos;">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Trasforma gli URL delle immagini (vedi scheda Modelli)">
+<!ENTITY processLazyLoading "Processare gli URL lazy-loading">
+<!ENTITY getContentDelay "Ottieni il ritardo dei contenuti (in millisecondi):">
 <!ENTITY globalTab "Globali">
 <!ENTITY feedTab "Feed/Articoli">
 <!ENTITY generalTab "Generale">
 <!ENTITY shortcutsTab "Scorciatoie">
 <!ENTITY keywordsTab "Parole chiave">
+<!ENTITY patternsTab "Modelli">
+<!ENTITY add "Aggiungi">
+<!ENTITY edit "Modifica">
+<!ENTITY remove "Rimuovi">
 <!ENTITY shortcuts.operationHeader "Operazione">
 <!ENTITY shortcuts.select "Per impostare una scorciatoia selezionare una riga e digitare una combinazione di tasti.">
 <!ENTITY shortcuts.warning "Molte combinazioni non sono disponibili perché già in uso.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nuovo">
 <!ENTITY statusBarTextUnread "# non letto">
 <!ENTITY statusBarTextNone "nessuno">
+<!ENTITY sCpattern "Modello:">
+<!ENTITY sCreplacement "Sostituzione:">

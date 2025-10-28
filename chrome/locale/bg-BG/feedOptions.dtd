@@ -17,9 +17,9 @@
 <!ENTITY filterImages "Сваляне на изображения от филтрираните уебстраници">
 <!ENTITY filterInfo "Въвеждане на филтър, за да трансформира връзката от HTML в описание на статията.">
 <!ENTITY filterJSinfo "При използване на JavaScript са възможни следните променливи:">
-<!ENTITY filterJSvar1 "linkDOM contains the DOM of the article link page">
-<!ENTITY filterJSvar2 "linkHTML contains the text/html of the article link page">
-<!ENTITY filterJSvar3 "getElementsByClass(class, tag, node) returns an array of all html elements with given tag and class contained in given node">
+<!ENTITY filterJSvar1 "linkDOM съдържа DOM на страницата с линкове към статията">
+<!ENTITY filterJSvar2 "linkHTML съдържа текста/html на страницата с линк към статията">
+<!ENTITY filterJSvar3 "getElementsByClass(class, tag, node) връща масив от всички html елементи с даден таг и клас, съдържащи се в даден възел.">
 <!ENTITY filterMime "Презапиши кодировката (+ за авто, &gt; за проба или задаване)">
 <!ENTITY filterInfo2 "Трябва да зададете филтър или изображения, които да бъдат свалени от статията, а не html-страница. За да използвате вградените филтри, натиснете клавиш Backspace.">
 <!ENTITY never "никога">

@@ -32,14 +32,18 @@
 <!ENTITY favicons "Использовать веб-значки (favicons)">
 <!ENTITY updateTimeToBookmark "Записывать в закладку URL ленты и время обновления">
 <!ENTITY spam "Включить SPAM-фильтр">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Преобразование URL-адресов изображений (см. вкладку «Шаблоны»)">
+<!ENTITY processLazyLoading "Обработка URL-адресов с отложенной загрузкой">
+<!ENTITY getContentDelay "Получить задержку контента (в миллисекундах):">
 <!ENTITY globalTab "Глобальные">
 <!ENTITY feedTab "Ленты и Записи">
 <!ENTITY generalTab "Общие">
 <!ENTITY shortcutsTab "Сочетания клавиш">
 <!ENTITY keywordsTab "Ключевые слова">
+<!ENTITY patternsTab "Шаблоны">
+<!ENTITY add "Добавить">
+<!ENTITY edit "Редактировать">
+<!ENTITY remove "Удалить">
 <!ENTITY shortcuts.operationHeader "Действие">
 <!ENTITY shortcuts.select "Выберите мышкой действие и введите сочетание клавиш для вызова этого действия.">
 <!ENTITY shortcuts.warning "Многие сочетания уже используются и окажутся недоступными.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "кол-во новых">
 <!ENTITY statusBarTextUnread "кол-во непрочитанных">
 <!ENTITY statusBarTextNone "ничего">
+<!ENTITY sCpattern "Шаблон:">
+<!ENTITY sCreplacement "Замена:">

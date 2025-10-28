@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicon&apos;id">
 <!ENTITY updateTimeToBookmark "Salvesta voo url ja uuendamise vahemik järjehoidjana">
 <!ENTITY spam "Võimalda olulisuse filter">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Muuda pildi URL-aadresse (vaata vahekaarti „Mallid”)">
+<!ENTITY processLazyLoading "Protsessi laisklaadimisega URL-id">
+<!ENTITY getContentDelay "Sisu viivitus (millisekundites):">
 <!ENTITY globalTab "Üldine">
 <!ENTITY feedTab "Vood/Artiklid">
 <!ENTITY generalTab "Üldine">
 <!ENTITY shortcutsTab "Otseteed:">
 <!ENTITY keywordsTab "Märksõnad">
+<!ENTITY patternsTab "Mustrid">
+<!ENTITY add "Lisada">
+<!ENTITY edit "Muuda">
+<!ENTITY remove "Eemalda">
 <!ENTITY shortcuts.operationHeader "Tegevus">
 <!ENTITY shortcuts.select "Vali rida ja vajuta klahvikombinatsiooni kiirvaliku salvestamiseks.">
 <!ENTITY shortcuts.warning "Palju klahvikombinatsioone on juba kasutuses ja ei ole valitavad.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# uus">
 <!ENTITY statusBarTextUnread "# lugemata">
 <!ENTITY statusBarTextNone "pole">
+<!ENTITY sCpattern "Muster:">
+<!ENTITY sCreplacement "Asendamine:">

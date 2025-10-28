@@ -32,14 +32,18 @@
 <!ENTITY favicons "Фавикони">
 <!ENTITY updateTimeToBookmark "Напишете адреса и времето за обновяване на отметката">
 <!ENTITY spam "Включване на интерес-филтъра">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Преобразуване на URL адреси на изображения (виж раздела Шаблони)">
+<!ENTITY processLazyLoading "Обработка на lazy-loading URL адреси">
+<!ENTITY getContentDelay "Забавяне при поискване на съдържание (в милисекунди):">
 <!ENTITY globalTab "Глобални">
 <!ENTITY feedTab "Емисии/Статии">
 <!ENTITY generalTab "Общи">
 <!ENTITY shortcutsTab "Бързи клавиши">
 <!ENTITY keywordsTab "Ключови думи">
+<!ENTITY patternsTab "Шаблони">
+<!ENTITY add "Добави">
+<!ENTITY edit "Редактиране">
+<!ENTITY remove "Премахни">
 <!ENTITY shortcuts.operationHeader "Операция">
 <!ENTITY shortcuts.select "Изберете ред и натиснете клавишната комбинация, за да я зададете.">
 <!ENTITY shortcuts.warning "Много от клавишните комбинации вече се използват или не са налични.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# ново">
 <!ENTITY statusBarTextUnread "# непрочетено">
 <!ENTITY statusBarTextNone "няма">
+<!ENTITY sCpattern "Шаблон:">
+<!ENTITY sCreplacement "Подмени със:">

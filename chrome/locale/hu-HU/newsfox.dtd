@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Kijelölt megjelölése olvasottként">
 <!ENTITY markSelAsUnread "Kijelölt megjelölése olvasatlanként">
+<!ENTITY editTitle.menu "Cím szerkesztése">
+<!ENTITY editTitle.title "Cím szerkesztése">
+<!ENTITY editTitle.prompt "Írjon be új címet:">

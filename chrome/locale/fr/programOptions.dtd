@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicônes">
 <!ENTITY updateTimeToBookmark "Écrire les URL et heures de mise à jour des flux dans les marque-pages">
 <!ENTITY spam "Activer le filtre d'intérêt">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Transformer les URL d'images (voir l'onglet Modèles)">
+<!ENTITY processLazyLoading "Traiter les URL à chargement différé">
+<!ENTITY getContentDelay "Obtenir le délai de contenu (en millisecondes):">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Flux/Articles">
 <!ENTITY generalTab "Général">
 <!ENTITY shortcutsTab "Raccourcis">
 <!ENTITY keywordsTab "Mots-clé">
+<!ENTITY patternsTab "Motifs">
+<!ENTITY add "Ajouter">
+<!ENTITY edit "Modifier">
+<!ENTITY remove "Supprimer">
 <!ENTITY shortcuts.operationHeader "Opération">
 <!ENTITY shortcuts.select "Sélectionner une colonne et entrer une combinaison de touches.">
 <!ENTITY shortcuts.warning "De nombreuses combinaisons de touches sont déjà utilisées et indisponibles.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nouveaux">
 <!ENTITY statusBarTextUnread "# non lus">
 <!ENTITY statusBarTextNone "aucun">
+<!ENTITY sCpattern "Motif:">
+<!ENTITY sCreplacement "Remplacement:">

@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Märgi valitu loetuks">
 <!ENTITY markSelAsUnread "Märgi valitu mitte-loetuks">
+<!ENTITY editTitle.menu "Pealkirja muutmine">
+<!ENTITY editTitle.title "Pealkirja muutmine">
+<!ENTITY editTitle.prompt "Sisestage uus pealkiri:">

@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Отметить выбранное как прочитанное">
 <!ENTITY markSelAsUnread "Отметить выбранное как непрочитанное">
+<!ENTITY editTitle.menu "Изменить название">
+<!ENTITY editTitle.title "Изменить название">
+<!ENTITY editTitle.prompt "Впишите новый заголовок:">

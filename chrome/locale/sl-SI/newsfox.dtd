@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Označi izbrano kot prebrano">
 <!ENTITY markSelAsUnread "Označi izbrano kot neprebrano">
+<!ENTITY editTitle.menu "Uredi naslov">
+<!ENTITY editTitle.title "Uredi naslov">
+<!ENTITY editTitle.prompt "Vnesite nov naslov:">

@@ -29,3 +29,6 @@
 <!ENTITY Xtend "Filtr">
 <!ENTITY markSelAsRead "Označit jako přečtené">
 <!ENTITY markSelAsUnread "Označit jako nepřečtené">
+<!ENTITY editTitle.menu "Upravit název">
+<!ENTITY editTitle.title "Upravit název">
+<!ENTITY editTitle.prompt "Zadejte nový název:">

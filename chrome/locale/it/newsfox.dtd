@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "Segna selezionato come già letto">
 <!ENTITY markSelAsUnread "Segna selezionato come non letto">
+<!ENTITY editTitle.menu "Modifica titolo">
+<!ENTITY editTitle.title "Modifica titolo">
+<!ENTITY editTitle.prompt "Inserisci un nuovo titolo:">

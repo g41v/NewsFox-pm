@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "選択した記事を既読にする">
 <!ENTITY markSelAsUnread "選択した記事を未読にする">
+<!ENTITY editTitle.menu "タイトルを編集">
+<!ENTITY editTitle.title "タイトルを編集">
+<!ENTITY editTitle.prompt "新しいタイトルを入力してください：">

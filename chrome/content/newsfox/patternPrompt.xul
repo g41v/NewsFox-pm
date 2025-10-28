@@ -1,4 +1,20 @@
 <?xml version="1.0"?>
+<!-- ***** BEGIN LICENSE BLOCK *****
+ - Version: LGPL 2.1
+ -
+ - Software distributed under the License is distributed on an "AS IS" basis,
+ - WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ - for the specific language governing rights and limitations under the
+ - License.
+ -
+ - The Original Code is for NewsFox.
+ -
+ - The Initial Developer of the Code is Големия Злодей
+ - https://github.com/g41v/NewsFox-pm/
+ - Copyright (C) 2025+. All Rights Reserved.
+ -
+ - ***** END LICENSE BLOCK ***** -->
+
 <!-- Simple dialog to edit Pattern and Replacement in one prompt -->
 <?xml-stylesheet href="chrome://global/skin/global.css" type="text/css"?>
 <?xml-stylesheet href="chrome://newsfox/skin/" type="text/css"?>

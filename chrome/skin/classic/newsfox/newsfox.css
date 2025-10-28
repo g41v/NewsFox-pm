@@ -58,7 +58,7 @@ treechildren::-moz-tree-image(faviconcol)
 	#newsfox-icon
 		{ margin-right: 4px; }
 	#feedMenu, #artMenu, #toolbarContext
-		{ background: -moz-dialog;  border: 1px solid black !important;}
+		{ background: -moz-dialog; border: 1px solid black !important;}
 
 	treechildren::-moz-tree-cell-text(unread)
 		{ font-weight: bold; }

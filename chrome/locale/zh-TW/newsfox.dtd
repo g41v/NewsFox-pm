@@ -29,3 +29,6 @@
 <!ENTITY Xtend "+">
 <!ENTITY markSelAsRead "標記為已閱讀">
 <!ENTITY markSelAsUnread "標記為未閱讀">
+<!ENTITY editTitle.menu "編輯標題">
+<!ENTITY editTitle.title "編輯標題">
+<!ENTITY editTitle.prompt "輸入新標題：">

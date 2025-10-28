@@ -32,14 +32,18 @@
 <!ENTITY favicons "Zaznamke">
 <!ENTITY updateTimeToBookmark "Zapiši URL vira in čase posodobitev v zaznamek">
 <!ENTITY spam "Omogoči filter zanimanj">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Preoblikujte URL-je slik (glejte zavihek Vzorci)">
+<!ENTITY processLazyLoading "Obdelava URL-jev z zamikom nalaganja">
+<!ENTITY getContentDelay "Pridobi zamudo vsebine (v milisekundah):">
 <!ENTITY globalTab "Splošno">
 <!ENTITY feedTab "Viri/Članki">
 <!ENTITY generalTab "Splošno">
 <!ENTITY shortcutsTab "Bližnjice">
 <!ENTITY keywordsTab "Ključne besede">
+<!ENTITY patternsTab "Vzorci">
+<!ENTITY add "Dodaj">
+<!ENTITY edit "Uredi">
+<!ENTITY remove "Odstrani">
 <!ENTITY shortcuts.operationHeader "Opravilo">
 <!ENTITY shortcuts.select "Za nastavitev bližnjice izberite vrstico in vtipkajte kombinacijo tipk.">
 <!ENTITY shortcuts.warning "Veliko bližnjic je še v uporabi in niso na voljo.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "Št. novih">
 <!ENTITY statusBarTextUnread "Št. neprebranih">
 <!ENTITY statusBarTextNone "Brez">
+<!ENTITY sCpattern "Vzorec:">
+<!ENTITY sCreplacement "Zamenjava:">

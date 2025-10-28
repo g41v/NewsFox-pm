@@ -32,14 +32,18 @@
 <!ENTITY favicons "Sajtikoner">
 <!ENTITY updateTimeToBookmark "Skriv flödes-URL och uppdatera tider till bokmärke">
 <!ENTITY spam "Aktivera intressefilter">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Omvandla bild-URL:er (se fliken Mönster)">
+<!ENTITY processLazyLoading "Bearbeta URL:er med lat laddning">
+<!ENTITY getContentDelay "Hämta innehållsfördröjning (i millisekunder):">
 <!ENTITY globalTab "Globalt">
 <!ENTITY feedTab "Flöden/Artiklar">
 <!ENTITY generalTab "Allmänt">
 <!ENTITY shortcutsTab "Kortkommandon">
 <!ENTITY keywordsTab "Nyckelord">
+<!ENTITY patternsTab "Mönster">
+<!ENTITY add "Lägg till">
+<!ENTITY edit "Redigera">
+<!ENTITY remove "Ta bort">
 <!ENTITY shortcuts.operationHeader "Operation">
 <!ENTITY shortcuts.select "Välj en rad och tryck in en tangentkombination för att ange ett kortkommando.">
 <!ENTITY shortcuts.warning "Många kortkommandon används redan och är inte tillgängliga.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# ny(a)">
 <!ENTITY statusBarTextUnread "# oläst(a)">
 <!ENTITY statusBarTextNone "ingen">
+<!ENTITY sCpattern "Mönster:">
+<!ENTITY sCreplacement "Ersättning:">

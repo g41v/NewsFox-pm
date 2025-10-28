@@ -32,14 +32,18 @@
 <!ENTITY favicons "Favicons">
 <!ENTITY updateTimeToBookmark "Escribir las direcciones de los hilos y las fechas de actualización en los marcadores">
 <!ENTITY spam "Habilitar filtro de interés">
-<!ENTITY transformImageURLs "Transform image URLs">
-<!ENTITY processLazyLoading "Process lazy-loading URLs">
-<!ENTITY getXbodyDelay "getXbody Delay (milliseconds):">
+<!ENTITY transformImageURLs "Transformar URL de imágenes (véase la pestaña Patrones)">
+<!ENTITY processLazyLoading "Procesar URL de carga diferida">
+<!ENTITY getContentDelay "Obtener el retraso del contenido (en milisegundos):">
 <!ENTITY globalTab "Global">
 <!ENTITY feedTab "Hilos/Artículos">
 <!ENTITY generalTab "General">
 <!ENTITY shortcutsTab "Combinaciones de teclas">
 <!ENTITY keywordsTab "Palabras claves">
+<!ENTITY patternsTab "Patrones">
+<!ENTITY add "Añadir">
+<!ENTITY edit "Editar">
+<!ENTITY remove "Eliminar">
 <!ENTITY shortcuts.operationHeader "Operación">
 <!ENTITY shortcuts.select "Seleccione una fila y escriba la combinación de teclas">
 <!ENTITY shortcuts.warning "Algunas teclas pueden estar ya en uso y por tanto no estarán disponibles.">
@@ -53,3 +57,5 @@
 <!ENTITY statusBarTextNew "# nuevo">
 <!ENTITY statusBarTextUnread "# no leído">
 <!ENTITY statusBarTextNone "ninguno">
+<!ENTITY sCpattern "Patrón:">
+<!ENTITY sCreplacement "Sustitución:">
