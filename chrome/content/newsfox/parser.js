@@ -990,7 +990,7 @@ function getErrorRemedies(code)
 		case ERROR_UNKNOWN_FEED_FORMAT:
 			return remedyUNKNOWN;
 		case ERROR_SERVER_ERROR:
-			return remedySERVER + ":\n\n" + code.substring(1);
+			return remedySERVER + ":  " + code.substring(1);
 		default: return code;
 	}
 }

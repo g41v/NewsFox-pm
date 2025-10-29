@@ -303,8 +303,8 @@ function doXMLHttpRequest(urlFeed,urlSent,username,password,gFeedsToCheck, repea
 			xmlhttp.open("GET", urlsend, true, gSdr.decryptString(username), gSdr.decryptString(password));
 		else
 			xmlhttp.open("GET", urlsend, true);
-		if (NFgetPref("z.setHeader","bool",true))
-			xmlhttp.setRequestHeader("User-Agent", NFgetPref("z.header","str","Mozilla/5.0 NewsFox/" + VERSION));
+
+		xmlhttp.setRequestHeader("User-Agent", NFgetPref("z.header","str","Mozilla/5.0 NewsFox/" + VERSION));
 		xmlhttp.overrideMimeType("application/xml");
 		xmlhttp.onload = function() { checkStatus(xmlhttp,gFeedsToCheck,urlFeed,urlsend,username,password,repeat,httpRenewTimeout); }
 		// TODO: do error handling  timeout repsonds as 200-OK?

@@ -1715,7 +1715,7 @@ function troubleshoot()
 	doc.body.appendChild(doc.createElement("hr"));
 
 		var p = doc.createElement("p");
-		p.innerHTML = remedies.replace(/\n/g,"<br/>");
+		p.textContent = remedies;
 	doc.body.appendChild(p);
 
 		// Add feed validator link for invalid URL errors
@@ -1727,7 +1727,7 @@ function troubleshoot()
 			a1.setAttribute("target","_blank");
 			const NF_SB = document.getElementById("newsfox-string-bundle");
 			var feedValidator = NF_SB.getString('remedy_checkFeedValidator');
-			a1.innerHTML = feedValidator;
+			a1.textContent = feedValidator;
 			p1.appendChild(a1);
 	doc.body.appendChild(p1);
 		}
@@ -1737,7 +1737,7 @@ function troubleshoot()
 		var a2 = doc.createElement("a");
 		a2.setAttribute("href",feed.url);
 		a2.setAttribute("target","_blank");
-		a2.innerHTML = feed.url;
+		a2.textContent = feed.url;
 		p2.appendChild(a2);
 	doc.body.appendChild(p2);
 
