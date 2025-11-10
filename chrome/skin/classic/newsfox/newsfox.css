@@ -150,4 +150,8 @@ treechildren::-moz-tree-image(faviconcol)
 
 	#nameFTB, #mfBhome, #mfBcheck, #mfBcancel, #mfBtag, #mfBmarkAllAsRead, #mfBmarkAllAsUnread, #mfBdelete, #mfBoptions, #spacer1, #spacer2
 		{ display: none; }
+
+	/* Feeds that are only in the FEEDS group will appear in red text */
+	treechildren::-moz-tree-cell-text(onlyInFeeds)
+	{ color: red !important; }
 }
