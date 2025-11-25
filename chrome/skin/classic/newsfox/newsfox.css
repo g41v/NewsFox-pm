@@ -47,7 +47,12 @@ treechildren::-moz-tree-image(faviconcol)
 	#mfeedTitle { font-weight: bold; color: darkblue; }
 
 	.feedtree, .articletree
-		{ margin: 0px; border: none; -moz-appearance: none; }
+	{
+		margin: 0px;
+		border: none;
+		appearance: none;
+		-moz-appearance: none;
+	}
 	.toolbar, .splitter
 		{ border: none; }
 
@@ -58,7 +63,36 @@ treechildren::-moz-tree-image(faviconcol)
 	#newsfox-icon
 		{ margin-right: 4px; }
 	#feedMenu, #artMenu, #toolbarContext
-		{ background-color: gray; border: 1px solid black !important; }
+	{
+		background: -moz-dialog;
+		color: -moz-FieldText;
+		border: 1px solid black !important;
+		appearance: none;
+		-moz-appearance: none;
+		/* Base menu colors follow the current OS theme for older Pale Moon versions */
+	}
+	#feedMenu menuitem,
+	#artMenu menuitem,
+	#toolbarContext menuitem
+		{ color: inherit; }
+	#feedMenu menuitem:hover,
+	#artMenu menuitem:hover,
+	#toolbarContext menuitem:hover
+		{ background-color: rgba(0, 0, 0, 0.08); }
+	@media (prefers-color-scheme: dark)
+	{
+		#feedMenu, #artMenu, #toolbarContext
+		{
+			background-color: #2b2b2b;
+			color: #f0f0f0;
+			border-color: #5a5a5a !important;
+			/* Dark mode palette keeps context menus readable */
+		}
+		#feedMenu menuitem:hover,
+		#artMenu menuitem:hover,
+		#toolbarContext menuitem:hover
+			{ background-color: #3a3a3a; }
+	}
 
 	treechildren::-moz-tree-cell-text(unread)
 		{ font-weight: bold; }
