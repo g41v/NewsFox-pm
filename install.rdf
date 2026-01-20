@@ -5,7 +5,7 @@
 	<Description about="urn:mozilla:install-manifest">
 
 		<em:id>{899DF1F8-2F43-4394-8315-37F6744E6319}</em:id>
-		<em:version>1.1.0.0.0</em:version>
+		<em:version>1.1.0.0.1</em:version>
 		<em:type>2</em:type>
 		<em:name>NewsFox</em:name>
 		<em:description>RSS/Atom News Reader.</em:description>
@@ -14,6 +14,7 @@
 		<em:contributor>Ron Pruitt</em:contributor>
 		<em:contributor>Големия Злодей</em:contributor>
 		<em:homepageURL>https://github.com/g41v/NewsFox-pm/</em:homepageURL>
+		<em:supportURL>https://github.com/g41v/NewsFox-pm/issues</em:supportURL>
 		<em:aboutURL>chrome://newsfox/content/help/about.xhtml</em:aboutURL>
 		<em:iconURL>chrome://newsfox/skin/newsfox-32.png</em:iconURL>
 
@@ -21,7 +22,7 @@
 			<Description>
 				<em:id>{8de7fcbb-c55c-4fbe-bfc5-fc555c87dbc4}</em:id>
 				<em:minVersion>2.0</em:minVersion>
-				<em:maxVersion>33.*</em:maxVersion>
+				<em:maxVersion>34.*</em:maxVersion>
 			</Description>
 		</em:targetApplication>
 

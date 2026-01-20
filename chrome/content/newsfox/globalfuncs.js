@@ -37,7 +37,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const VERSION = "1.1.0.0.0";
+const VERSION = "1.1.0.0.1";
 const NEWSFOX = "NewsFox";
 const NEWSFOX_RSS = "https://github.com/g41v/NewsFox-pm/releases.atom?startup";
 const NEWSFOX_DATE = "April 15, 2003 8:01 PM";
@@ -886,6 +886,18 @@ function NFgetDefaultUrlPatterns()
 		{
 			pattern: "://secure.gravatar.com/",
 			replacement: "://wsrv.nl/?url=//secure.gravatar.com/"
+		},
+		{
+			pattern: "://covers.libro.fm/",
+			replacement: "://wsrv.nl/?url=//covers.libro.fm/"
+		},
+		{
+			pattern: "://thumbs1.imgbox.com/",
+			replacement: "://wsrv.nl/?url=//thumbs1.imgbox.com/"
+		},
+		{
+			pattern: "://thumbs2.imgbox.com/",
+			replacement: "://wsrv.nl/?url=//thumbs2.imgbox.com/"
 		},
 		{
 			pattern: "/wsrv.nl/?url=https://wsrv.nl/?url=https://wsrv.nl/?url=",
