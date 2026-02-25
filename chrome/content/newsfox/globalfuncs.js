@@ -37,7 +37,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-const VERSION = "1.1.0.0.1";
+const VERSION = "1.1.0.0.2";
 const NEWSFOX = "NewsFox";
 const NEWSFOX_RSS = "https://github.com/g41v/NewsFox-pm/releases.atom?startup";
 const NEWSFOX_DATE = "April 15, 2003 8:01 PM";

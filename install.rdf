@@ -5,7 +5,7 @@
 	<Description about="urn:mozilla:install-manifest">
 
 		<em:id>{899DF1F8-2F43-4394-8315-37F6744E6319}</em:id>
-		<em:version>1.1.0.0.1</em:version>
+		<em:version>1.1.0.0.2</em:version>
 		<em:type>2</em:type>
 		<em:name>NewsFox</em:name>
 		<em:description>RSS/Atom News Reader.</em:description>
