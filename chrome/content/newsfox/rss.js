@@ -323,6 +323,31 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 	var feed = gFmodel.getFeedByURL(urlFeed);
 	var url2 = xmlhttp.getResponseHeader("location");
 	var urlLookup = urlFeed;
+	var redirectTarget = null;
+	var finalUrl = null;
+	
+	// Try to determine the final URL actually used for this request.
+	// Modern engines may auto-follow redirects and only expose a 200 status.
+	try
+	{
+		if (xmlhttp.channel && xmlhttp.channel.URI && xmlhttp.channel.URI.spec)
+		{
+			finalUrl = xmlhttp.channel.URI.spec;
+		}
+	}
+	catch (e)
+	{
+		// ignore channel inspection failures
+	}
+	if (!finalUrl && xmlhttp.responseURL)
+	{
+		finalUrl = xmlhttp.responseURL;
+	}
+	if (finalUrl && finalUrl != urlFeed)
+	{
+		// Remember redirect target so we can persist it once feed processing succeeds.
+		redirectTarget = finalUrl;
+	}
 	
 	// Clean up host tracking when request completes
 	var host = extractHostFromUrl(urlFeed);
@@ -332,12 +357,15 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 	switch (xmlhttp.status)
 	{
 		case 200:  // OK
-			checkFeed(xmlhttp, gFeedsToCheck, urlFeed, urlSent, httpRenewTimeout);
+			// Even when status is 200, XHR may have auto-followed a redirect.
+			// Pass any detected redirect target to checkFeed so it can safely
+			// update feed.url after the feed has been processed.
+			checkFeed(xmlhttp, gFeedsToCheck, urlFeed, urlSent, httpRenewTimeout, redirectTarget);
 			break;
 		case 429:  // Too Many Requests - respect Retry-After and back off
 			// Determine retry delay from Retry-After header (seconds or HTTP-date)
 			var retryAfterHeader = xmlhttp.getResponseHeader("Retry-After");
-			var delayMs = 60000; // default to 60s if header missing or invalid
+			var delayMs = 5400000; // default to 90minutes if header missing or invalid
 			if (retryAfterHeader)
 			{
 				var seconds = parseInt(retryAfterHeader, 10);
@@ -375,14 +403,52 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 			if (!cancelCheck)
 				addAnotherCheck();
 			break;
-		case 301:  // permanent redirect
-			feed.url = url2;
-			urlLookup = url2;
+		case 301:  // Moved Permanently
+		case 308:  // Permanent Redirect
+			// For explicit 301/308 responses (no auto-follow), permanently update feed URL.
+			if (url2)
+			{
+				// Resolve relative Location headers against the original feed URL
+				var absolute301 = resolveUrl(url2, urlFeed);
+				if (absolute301)
+				{
+					feed.url = absolute301;
+					urlLookup = absolute301;
+					url2 = absolute301;
+				}
+				else
+				{
+					var err301 = ERROR_SERVER_ERROR + "301 redirect with invalid Location header";
+					abortHttpRequest(urlFeed, err301, httpRenewTimeout);
+					break;
+				}
+			}
+			else
+			{
+				var err301Missing = ERROR_SERVER_ERROR + "301 redirect with missing Location header";
+				abortHttpRequest(urlFeed, err301Missing, httpRenewTimeout);
+				break;
+			}
 		case 300:  // multiple choices  ??
 		case 302:  // found
 		case 303:  // see other
 		case 307:  // temporary redirect
-			doXMLHttpRequest(urlLookup,url2,username,password,gFeedsToCheck,repeat);
+			// For other 3xx codes, only follow the redirect when Location is present
+			// and can be resolved into a usable URL.
+			if (!url2)
+			{
+				var err3xxMissing = ERROR_SERVER_ERROR + "3xx redirect with missing Location header";
+				abortHttpRequest(urlFeed, err3xxMissing, httpRenewTimeout);
+				break;
+			}
+			var absolute3xx = resolveUrl(url2, urlFeed);
+			if (!absolute3xx)
+			{
+				var err3xxInvalid = ERROR_SERVER_ERROR + "3xx redirect with invalid Location header";
+				abortHttpRequest(urlFeed, err3xxInvalid, httpRenewTimeout);
+				break;
+			}
+			doXMLHttpRequest(urlLookup,absolute3xx,username,password,gFeedsToCheck,repeat);
 			break;
 		case 401:  // livejournal digest bug #21379 code from sg2002 patch
 			repeat++;
@@ -395,7 +461,7 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 		case 0: // local file returns zero???
 			if (urlFeed.substring(0,4) == "file")
 			{
-				checkFeed(xmlhttp, gFeedsToCheck, urlFeed, urlSent, httpRenewTimeout);
+				checkFeed(xmlhttp, gFeedsToCheck, urlFeed, urlSent, httpRenewTimeout, null);
 				break;
 			}
 		default:
@@ -405,16 +471,34 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 	}
 }
 
-function checkFeed(xmlhttp, feedsToCheck, urlFeed, urlSent, httpRenewTimeout)
+function checkFeed(xmlhttp, feedsToCheck, urlFeed, urlSent, httpRenewTimeout, redirectTarget)
 {
 	removeUrlFromTimeList(urlFeed);
 	if (null != httpRenewTimeout) clearTimeout(httpRenewTimeout);
 	var index = gFmodel.getIndexByURL(urlFeed);
 	try
 	{
+		// If we have a detected redirect target, update the feed URL in the model
+		// only after locating the existing feed entry. This keeps lookups by the
+		// original URL working during this refresh while still persisting the new URL.
+		if (index > -1 && redirectTarget && typeof redirectTarget == "string")
+		{
+			// Only persist HTTP/HTTPS redirects; ignore other schemes.
+			var lowerRedirect = redirectTarget.toLowerCase();
+			if (lowerRedirect.substring(0,7) == "http://" || lowerRedirect.substring(0,8) == "https://")
+			{
+				var redirectFeed = gFmodel.get(index);
+				if (redirectFeed && redirectFeed.url != redirectTarget)
+				{
+					// Persist the final URL actually used so future checks go directly there.
+					redirectFeed.url = redirectTarget;
+				}
+			}
+		}
+
 		if (index == -1 && (feedsToCheck == gFeedsToCheck))
 			precheckFeed(gFeedsToCheck);
-		var feed = gFmodel.getFeedByURL(urlFeed);
+		var feed = (index > -1) ? gFmodel.get(index) : gFmodel.getFeedByURL(urlFeed);
 		loadFeed(feed,true,false);
 
 		var xml = xmlhttp.responseXML;
