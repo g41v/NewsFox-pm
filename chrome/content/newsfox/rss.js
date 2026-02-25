@@ -46,6 +46,7 @@
 const KM_ALT_TITLE = "NEWSFOX";
 const POLL_INTERVAL = 250;
 const MATHML_ENTITY = " <!ENTITY % mDTD SYSTEM \"http://m/mathml.dtd\" > %mDTD; ";
+const MAX_429_RETRIES = 5; // maximum backoff attempts for HTTP 429 responses
 
 var gNumToCheck;
 var cancelCheck = false;
@@ -365,7 +366,7 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 		case 429:  // Too Many Requests - respect Retry-After and back off
 			// Determine retry delay from Retry-After header (seconds or HTTP-date)
 			var retryAfterHeader = xmlhttp.getResponseHeader("Retry-After");
-			var delayMs = 5400000; // default to 90minutes if header missing or invalid
+			var delayMs = 5400000; // default to 90 minutes if Retry-After header is missing or invalid
 			if (retryAfterHeader)
 			{
 				var seconds = parseInt(retryAfterHeader, 10);
@@ -382,13 +383,20 @@ function checkStatus(xmlhttp, gFeedsToCheck, urlFeed, urlSent, username, passwor
 					}
 				}
 			}
+			// Stop retrying after reaching the maximum number of backoff attempts
+			if (repeat >= MAX_429_RETRIES)
+			{
+				var err429Max = ERROR_SERVER_ERROR + "429 - Too Many Requests (max retries reached)";
+				abortHttpRequest(urlFeed, err429Max, httpRenewTimeout);
+				break;
+			}
 			// Free the slot so other feeds can continue while we wait to retry
 			removeUrlFromTimeList(urlFeed);
 			if (null != httpRenewTimeout) clearTimeout(httpRenewTimeout);
 			try
 			{
-				// Provide user feedback that we're backing off
-				gFmodel.getFeedByURL(urlFeed).error = ERROR_SERVER_ERROR + "429 - Too Many Requests (retrying)";
+				// Provide user feedback that we're backing off and will retry up to the configured limit
+				gFmodel.getFeedByURL(urlFeed).error = ERROR_SERVER_ERROR + "429 - Too Many Requests (retrying; attempt " + (repeat + 1) + " of " + MAX_429_RETRIES + ")";
 			}
 			catch (e)
 			{
